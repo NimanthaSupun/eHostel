@@ -5,9 +5,11 @@ require_admin();
 
 $totalStudents = mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM users WHERE role='student'"))[0];
 $pendingApps   = mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM applications WHERE status='pending'"))[0];
-$totalBeds     = mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM beds"))[0];
-$occupiedBeds  = mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM beds WHERE status='occupied'"))[0];
-$vacantBeds    = $totalBeds - $occupiedBeds;
+
+$singleOccupied = mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM beds b JOIN rooms r ON b.room_id = r.room_id WHERE r.room_type='single' AND (r.room_number LIKE 'F1/%') AND b.status='occupied'"))[0];
+$singleVacant   = mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM beds b JOIN rooms r ON b.room_id = r.room_id WHERE r.room_type='single' AND (r.room_number LIKE 'F1/%') AND b.status='vacant'"))[0];
+$doubleOccupied = mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM beds b JOIN rooms r ON b.room_id = r.room_id WHERE r.room_type='shared' AND (r.room_number LIKE 'F2/%') AND b.status='occupied'"))[0];
+$doubleVacant   = mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM beds b JOIN rooms r ON b.room_id = r.room_id WHERE r.room_type='shared' AND (r.room_number LIKE 'F2/%') AND b.status='vacant'"))[0];
 
 $recentApps = mysqli_query($conn, "SELECT ap.application_id, u.full_name, ap.preferred_room_type, ap.applied_date, ap.status
                                     FROM applications ap JOIN users u ON ap.user_id = u.user_id
@@ -44,13 +46,24 @@ $active = 'dash';
         <div class="num" style="color:var(--warning);"><?= $pendingApps ?></div>
         <div class="label">Pending Applications</div>
     </div>
+</div>
+
+<div class="card-grid" style="margin-bottom:2rem;">
     <div class="stat-card">
-        <div class="num"><?= $occupiedBeds ?> / <?= $totalBeds ?></div>
-        <div class="label">Beds Occupied</div>
+        <div class="num"><?= $singleOccupied ?></div>
+        <div class="label">Single Rooms Occupied</div>
     </div>
     <div class="stat-card">
-        <div class="num" style="color:var(--success);"><?= $vacantBeds ?></div>
-        <div class="label">Vacant Beds Available</div>
+        <div class="num" style="color:var(--success);"><?= $singleVacant ?></div>
+        <div class="label">Single Rooms Vacant</div>
+    </div>
+    <div class="stat-card">
+        <div class="num"><?= $doubleOccupied ?></div>
+        <div class="label">Double Rooms Occupied</div>
+    </div>
+    <div class="stat-card">
+        <div class="num" style="color:var(--success);"><?= $doubleVacant ?></div>
+        <div class="label">Double Rooms Vacant</div>
     </div>
 </div>
 

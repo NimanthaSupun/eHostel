@@ -3,11 +3,13 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../config/db.php';
 require_student();
 
-$rooms = mysqli_query($conn, "SELECT r.*,
+$rooms = mysqli_query($conn, "SELECT r.room_id, r.room_number, r.floor, r.room_type, r.capacity,
                                 (SELECT COUNT(*) FROM beds b WHERE b.room_id = r.room_id) AS total_beds,
                                 (SELECT COUNT(*) FROM beds b WHERE b.room_id = r.room_id AND b.status='occupied') AS occupied_beds,
                                 (SELECT COUNT(*) FROM beds b WHERE b.room_id = r.room_id AND b.status='vacant') AS vacant_beds
-                               FROM rooms r ORDER BY r.room_number");
+                               FROM rooms r
+                               WHERE r.room_number LIKE 'F1/%' OR r.room_number LIKE 'F2/%'
+                               ORDER BY r.floor, r.room_number");
 
 $base = '../';
 $active = 'st_rooms';
@@ -41,6 +43,7 @@ $active = 'st_rooms';
         <thead>
             <tr>
                 <th>Room Number</th>
+                <th>Floor</th>
                 <th>Room Configuration</th>
                 <th>Capacity</th>
                 <th>Occupied Beds</th>
@@ -52,10 +55,11 @@ $active = 'st_rooms';
         <?php if ($rooms && mysqli_num_rows($rooms) > 0): while ($r = mysqli_fetch_assoc($rooms)): ?>
             <tr>
                 <td style="font-weight:600;color:var(--primary-dark);font-size:1.05rem;"><?= h($r['room_number']) ?></td>
-                <td><?= h(ucfirst($r['room_type'])) ?> Room</td>
-                <td><?= $r['total_beds'] ?> Bed(s)</td>
-                <td><?= $r['occupied_beds'] ?> Bed(s)</td>
-                <td style="font-weight:700;color:var(--success);"><?= $r['vacant_beds'] ?> Bed(s) Available</td>
+                <td>Floor <?= (int) $r['floor'] ?></td>
+                <td><?= $r['room_type'] === 'single' ? 'Single Bed Room' : 'Double Bed Room' ?></td>
+                <td><?= (int) $r['capacity'] ?> Bed(s)</td>
+                <td><?= (int) $r['occupied_beds'] ?> Bed(s)</td>
+                <td style="font-weight:700;color:var(--success);"><?= (int) $r['vacant_beds'] ?> Bed(s) Available</td>
                 <td>
                     <?php if ($r['occupied_beds'] == $r['total_beds']): ?>
                         <span class="badge badge-danger">Fully Occupied</span>
@@ -67,7 +71,7 @@ $active = 'st_rooms';
                 </td>
             </tr>
         <?php endwhile; else: ?>
-            <tr><td colspan="6" class="empty-state">No rooms registered yet.</td></tr>
+            <tr><td colspan="7" class="empty-state">No rooms configured yet.</td></tr>
         <?php endif; ?>
         </tbody>
     </table>

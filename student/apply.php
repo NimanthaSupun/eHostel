@@ -7,7 +7,11 @@ $uid = $_SESSION['user_id'];
 $error = '';
 $success = '';
 
-// check for an existing pending/approved application
+$userStmt = mysqli_prepare($conn, "SELECT full_name, nic_no, contact_no, emergency_contact, address, district, academic_year, campus, faculty, degree_program, distance_km FROM users WHERE user_id = ?");
+mysqli_stmt_bind_param($userStmt, "i", $uid);
+mysqli_stmt_execute($userStmt);
+$studentProfile = mysqli_stmt_get_result($userStmt)->fetch_assoc() ?: [];
+
 $stmt = mysqli_prepare($conn, "SELECT * FROM applications WHERE user_id = ? ORDER BY application_id DESC LIMIT 1");
 mysqli_stmt_bind_param($stmt, "i", $uid);
 mysqli_stmt_execute($stmt);
@@ -16,21 +20,37 @@ $existing = mysqli_stmt_get_result($stmt)->fetch_assoc();
 $canApply = !$existing || $existing['status'] === 'rejected';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canApply) {
-    $room_type = $_POST['preferred_room_type'] ?? 'shared';
-    $allowed_types = ['single', 'shared', 'single_ac', 'single_fan', 'double_ac', 'double_fan', 'triple_ac', 'triple_fan'];
-    $room_type = in_array($room_type, $allowed_types) ? $room_type : 'shared';
+    $preferredRoomType = $_POST['preferred_room_type'] ?? 'shared';
+    $dbRoomType = $preferredRoomType === 'single' ? 'single' : 'shared';
+    $nicNo = trim($_POST['nic_no'] ?? '');
+    $contactNo = trim($_POST['contact_no'] ?? '');
+    $address = trim($_POST['address'] ?? '');
+    $academicYear = trim($_POST['academic_year'] ?? '');
+    $distanceKmRaw = trim($_POST['distance_km'] ?? '');
+    $distanceKm = $distanceKmRaw === '' ? null : (float) $distanceKmRaw;
 
-    // Simplified room type map to existing enum ('single','shared') or fallback
-    $db_room_type = (strpos($room_type, 'single') !== false) ? 'single' : 'shared';
-
-    $ins = mysqli_prepare($conn, "INSERT INTO applications (user_id, preferred_room_type, applied_date, status) VALUES (?, ?, CURDATE(), 'pending')");
-    mysqli_stmt_bind_param($ins, "is", $uid, $db_room_type);
-
-    if (mysqli_stmt_execute($ins)) {
-        $success = 'Your hostel application has been submitted successfully and is pending administrative review.';
-        $canApply = false;
+    if ($nicNo === '' || $contactNo === '' || $address === '' || $academicYear === '') {
+        $error = 'Please complete NIC, contact number, address, and academic year.';
+    } elseif ($distanceKm !== null && $distanceKm < 0) {
+        $error = 'Distance from campus must be a positive value.';
     } else {
-        $error = 'Something went wrong. Please try again.';
+        mysqli_begin_transaction($conn);
+        try {
+            $updateUserStmt = mysqli_prepare($conn, "UPDATE users SET nic_no=?, contact_no=?, address=?, academic_year=? WHERE user_id=?");
+            mysqli_stmt_bind_param($updateUserStmt, "ssssi", $nicNo, $contactNo, $address, $academicYear, $uid);
+            mysqli_stmt_execute($updateUserStmt);
+
+            $ins = mysqli_prepare($conn, "INSERT INTO applications (user_id, preferred_room_type, nic_no, address, academic_year, applied_date, status) VALUES (?, ?, ?, ?, ?, CURDATE(), 'pending')");
+            mysqli_stmt_bind_param($ins, "issss", $uid, $dbRoomType, $nicNo, $address, $academicYear);
+            mysqli_stmt_execute($ins);
+
+            mysqli_commit($conn);
+            $success = 'Your hostel application has been submitted successfully and is pending administrative review.';
+            $canApply = false;
+        } catch (Exception $e) {
+            mysqli_rollback($conn);
+            $error = 'Application submission failed: ' . $e->getMessage();
+        }
     }
 }
 
@@ -77,84 +97,80 @@ $active = 'apply';
         </div>
     <?php else: ?>
         <form method="POST" action="apply.php">
-            
             <div style="border-bottom:1px solid var(--border);padding-bottom:0.75rem;margin-bottom:1.5rem;">
-                <span style="font-family:var(--font-serif);font-size:1.35rem;color:var(--primary-dark);">1. Personal &amp; Contact Details</span>
+                <span style="font-family:var(--font-serif);font-size:1.35rem;color:var(--primary-dark);">1. Student &amp; Residence Details</span>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="student_name">Full Name *</label>
-                    <input type="text" id="student_name" name="student_name" class="input-luxury" required value="<?= h($_SESSION['full_name'] ?? '') ?>">
+                    <label for="full_name">Full Name</label>
+                    <input type="text" id="full_name" class="input-luxury" value="<?= h($_SESSION['full_name'] ?? '') ?>" disabled>
                 </div>
                 <div class="form-group">
-                    <label for="age">Age</label>
-                    <input type="number" id="age" name="age" class="input-luxury" min="16" max="40" placeholder="e.g. 21">
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="gender">Gender</label>
-                    <select id="gender" name="gender" class="input-luxury">
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="dob">Date of Birth</label>
-                    <input type="date" id="dob" name="dob" class="input-luxury">
+                    <label for="nic_no">NIC No. *</label>
+                    <input type="text" id="nic_no" name="nic_no" class="input-luxury" required value="<?= h($_POST['nic_no'] ?? ($studentProfile['nic_no'] ?? '')) ?>" placeholder="e.g. 200012345678 or 200012345V">
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="emergency_contact">Emergency Contact No. *</label>
-                    <input type="tel" id="emergency_contact" name="emergency_contact" class="input-luxury" placeholder="e.g. 071 987 6543">
+                    <label for="contact_no">Contact No. *</label>
+                    <input type="text" id="contact_no" name="contact_no" class="input-luxury" required value="<?= h($_POST['contact_no'] ?? ($studentProfile['contact_no'] ?? '')) ?>" placeholder="e.g. 0771234567">
                 </div>
                 <div class="form-group">
-                    <label for="district">Home District</label>
-                    <select id="district" name="district" class="input-luxury">
-                        <option value="Colombo">Colombo</option>
-                        <option value="Gampaha">Gampaha</option>
-                        <option value="Kalutara">Kalutara</option>
-                        <option value="Kandy">Kandy</option>
-                        <option value="Galle">Galle</option>
-                        <option value="Matara">Matara</option>
-                        <option value="Kurunegala">Kurunegala</option>
-                        <option value="Jaffna">Jaffna</option>
-                        <option value="Other">Other District</option>
-                    </select>
+                    <label for="emergency_contact">Emergency Contact</label>
+                    <input type="text" id="emergency_contact" name="emergency_contact" class="input-luxury" value="<?= h($_POST['emergency_contact'] ?? ($studentProfile['emergency_contact'] ?? '')) ?>" placeholder="Parent/Guardian contact">
                 </div>
-            </div>
-
-            <div style="border-bottom:1px solid var(--border);padding-bottom:0.75rem;margin:2rem 0 1.5rem;">
-                <span style="font-family:var(--font-serif);font-size:1.35rem;color:var(--primary-dark);">2. Academic &amp; Distance Info</span>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="faculty">Faculty</label>
-                    <input type="text" id="faculty" name="faculty" class="input-luxury" placeholder="e.g. Faculty of Science">
-                </div>
-                <div class="form-group">
-                    <label for="distance_km">Distance from Home to Campus (KM)</label>
-                    <input type="number" step="0.1" id="distance_km" name="distance_km" class="input-luxury" placeholder="e.g. 45.5">
-                </div>
-            </div>
-
-            <div style="border-bottom:1px solid var(--border);padding-bottom:0.75rem;margin:2rem 0 1.5rem;">
-                <span style="font-family:var(--font-serif);font-size:1.35rem;color:var(--primary-dark);">3. Room Preference</span>
             </div>
 
             <div class="form-group">
-                <label for="preferred_room_type">Preferred Accommodation Type *</label>
-                <select id="preferred_room_type" name="preferred_room_type" class="input-luxury" required>
-                    <option value="single">Single Room (Private Study Unit)</option>
-                    <option value="shared" selected>Shared Room (Double / Triple Sharing)</option>
-                </select>
-                <div class="form-hint">Note: Final room assignments depend on vacant bed availability.</div>
+                <label for="address">Permanent Address *</label>
+                <textarea id="address" name="address" class="input-luxury" rows="3" required placeholder="Enter your residential address"><?= h($_POST['address'] ?? ($studentProfile['address'] ?? '')) ?></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="district">District</label>
+                    <input type="text" id="district" name="district" class="input-luxury" value="<?= h($_POST['district'] ?? ($studentProfile['district'] ?? '')) ?>" placeholder="e.g. Colombo">
+                </div>
+                <div class="form-group">
+                    <label for="distance_km">Distance from Campus (km)</label>
+                    <input type="number" id="distance_km" name="distance_km" min="0" step="0.1" class="input-luxury" value="<?= h($_POST['distance_km'] ?? ($studentProfile['distance_km'] ?? '')) ?>" placeholder="e.g. 42.5">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="academic_year">Academic Year *</label>
+                    <input type="text" id="academic_year" name="academic_year" class="input-luxury" required value="<?= h($_POST['academic_year'] ?? ($studentProfile['academic_year'] ?? '')) ?>" placeholder="e.g. 2nd Year">
+                </div>
+                <div class="form-group">
+                    <label for="preferred_room_type">Preferred Accommodation Type *</label>
+                    <select id="preferred_room_type" name="preferred_room_type" class="input-luxury" required>
+                        <option value="single" <?= (($_POST['preferred_room_type'] ?? 'shared') === 'single') ? 'selected' : '' ?>>Single Room</option>
+                        <option value="shared" <?= (($_POST['preferred_room_type'] ?? 'shared') === 'shared') ? 'selected' : '' ?>>Double Room</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="border-bottom:1px solid var(--border);padding:1rem 0 0.75rem;margin:0.75rem 0 1.5rem;">
+                <span style="font-family:var(--font-serif);font-size:1.35rem;color:var(--primary-dark);">2. Academic Information</span>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="campus">Campus</label>
+                    <input type="text" id="campus" name="campus" class="input-luxury" value="<?= h($_POST['campus'] ?? ($studentProfile['campus'] ?? '')) ?>" placeholder="e.g. Colombo Campus">
+                </div>
+                <div class="form-group">
+                    <label for="faculty">Faculty</label>
+                    <input type="text" id="faculty" name="faculty" class="input-luxury" value="<?= h($_POST['faculty'] ?? ($studentProfile['faculty'] ?? '')) ?>" placeholder="e.g. Faculty of Science">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="degree_program">Degree Program</label>
+                <input type="text" id="degree_program" name="degree_program" class="input-luxury" value="<?= h($_POST['degree_program'] ?? ($studentProfile['degree_program'] ?? '')) ?>" placeholder="e.g. BSc in Computer Science">
             </div>
 
             <div style="margin-top:2.25rem;">

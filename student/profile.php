@@ -32,6 +32,9 @@ mysqli_stmt_bind_param($stmt, "i", $uid);
 mysqli_stmt_execute($stmt);
 $user = mysqli_stmt_get_result($stmt)->fetch_assoc();
 
+$studentId = $user['student_id'] ?? '';
+$studentIdLabel = $studentId !== '' ? h($studentId) : 'Pending';
+
 $base = '../';
 $active = 'profile';
 ?>
@@ -64,7 +67,7 @@ $active = 'profile';
         </div>
         <div>
             <h3 class="serif-heading" style="margin:0;font-size:1.6rem;"><?= h($user['full_name']) ?></h3>
-            <span style="font-size:0.85rem;color:var(--text-muted);">Registered Student &middot; <?= h($user['reg_no'] ?? 'No Reg No') ?></span>
+            <span style="font-size:0.85rem;color:var(--text-muted);">Registered Student &middot; <?= $studentIdLabel ?></span>
         </div>
     </div>
 
@@ -79,8 +82,8 @@ $active = 'profile';
                 <input type="text" id="full_name" name="full_name" class="input-luxury" required value="<?= h($user['full_name']) ?>">
             </div>
             <div class="form-group">
-                <label>Registration No. (System Generated)</label>
-                <input type="text" class="input-luxury" value="<?= h($user['reg_no'] ?? 'Pending') ?>" disabled style="background:var(--bg-secondary);">
+                <label>Student ID</label>
+                <input type="text" class="input-luxury" value="<?= $studentIdLabel ?>" disabled style="background:var(--bg-secondary);">
             </div>
         </div>
         <div class="form-row">
@@ -88,7 +91,10 @@ $active = 'profile';
                 <label>NIC No.</label>
                 <input type="text" class="input-luxury" value="<?= h($user['nic_no'] ?? 'Not Set') ?>" disabled style="background:var(--bg-secondary);">
             </div>
-            <div class="form-group"></div>
+            <div class="form-group">
+                <label>Academic Year</label>
+                <input type="text" class="input-luxury" value="<?= h($user['academic_year'] ?? 'Not Set') ?>" disabled style="background:var(--bg-secondary);">
+            </div>
         </div>
         <div class="form-row">
             <div class="form-group">

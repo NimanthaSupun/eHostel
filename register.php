@@ -12,54 +12,34 @@ $success = '';
 $base = '';
 $active = 'register';
 
-function generate_student_reg_no($conn) {
-    $year = date('Y');
-    $prefix = 'EH/' . $year . '/';
-    $like = $prefix . '%';
-
-    $stmt = mysqli_prepare($conn, "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(reg_no, '/', -1) AS UNSIGNED)), 0) + 1 AS next_seq FROM users WHERE reg_no LIKE ?");
-    mysqli_stmt_bind_param($stmt, 's', $like);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    $row = mysqli_fetch_assoc($result);
-
-    $nextSeq = (int) ($row['next_seq'] ?? 1);
-    return $prefix . str_pad((string) $nextSeq, 4, '0', STR_PAD_LEFT);
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $full_name = trim($_POST['full_name'] ?? '');
-    $nic_no    = trim($_POST['nic_no'] ?? '');
     $username  = trim($_POST['username'] ?? '');
     $email     = trim($_POST['email'] ?? '');
-    $contact   = trim($_POST['contact_no'] ?? '');
     $password  = $_POST['password'] ?? '';
     $confirm   = $_POST['confirm_password'] ?? '';
 
-    if ($full_name === '' || $nic_no === '' || $username === '' || $password === '') {
+    if ($full_name === '' || $username === '' || $password === '') {
         $error = 'Please fill in all required fields.';
-    } elseif (!preg_match('/^(\d{9}[VvXx]|\d{12})$/', $nic_no)) {
-        $error = 'Please enter a valid NIC number.';
     } elseif ($password !== $confirm) {
         $error = 'Passwords do not match.';
     } elseif (strlen($password) < 4) {
         $error = 'Password must be at least 4 characters.';
     } else {
-        $check = mysqli_prepare($conn, "SELECT user_id FROM users WHERE username = ? OR nic_no = ?");
-        mysqli_stmt_bind_param($check, 'ss', $username, $nic_no);
+        $check = mysqli_prepare($conn, "SELECT user_id FROM users WHERE username = ?");
+        mysqli_stmt_bind_param($check, 's', $username);
         mysqli_stmt_execute($check);
         mysqli_stmt_store_result($check);
 
         if (mysqli_stmt_num_rows($check) > 0) {
-            $error = 'That username or NIC number is already registered.';
+            $error = 'That username is already registered.';
         } else {
-            $reg_no = generate_student_reg_no($conn);
             $hash = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = mysqli_prepare($conn, "INSERT INTO users (username, password, role, full_name, email, contact_no, nic_no, reg_no) VALUES (?, ?, 'student', ?, ?, ?, ?, ?)");
-            mysqli_stmt_bind_param($stmt, 'sssssss', $username, $hash, $full_name, $email, $contact, $nic_no, $reg_no);
+            $stmt = mysqli_prepare($conn, "INSERT INTO users (username, password, role, full_name, email) VALUES (?, ?, 'student', ?, ?)");
+            mysqli_stmt_bind_param($stmt, 'ssss', $username, $hash, $full_name, $email);
 
             if (mysqli_stmt_execute($stmt)) {
-                $success = 'Account created successfully. Your registration number is ' . $reg_no . '.';
+                $success = 'Account created successfully. Please sign in to continue.';
             } else {
                 $error = 'Something went wrong. Please try again.';
             }
@@ -94,45 +74,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     border: 1px solid var(--border);
     box-shadow: var(--shadow-lg);
     overflow: hidden;
-    display: grid;
-    grid-template-columns: 1fr 1.25fr;
-}
-
-.auth-card-media {
-    position: relative;
-    background-image: url('images/Gz95b.jpg');
-    background-size: cover;
-    background-position: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding: 3rem 2.5rem;
-    color: #ffffff;
-    min-height: 520px;
-}
-
-.auth-card-overlay {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(180deg, rgba(18, 40, 40, 0.4) 0%, rgba(18, 40, 40, 0.92) 100%);
-    z-index: 1;
-}
-
-.auth-card-media-content {
-    position: relative;
-    z-index: 2;
 }
 
 .auth-card-form {
-    padding: 3.5rem 3rem;
+    padding: 3rem 2.5rem;
     display: flex;
     flex-direction: column;
     justify-content: center;
 }
 
 @media (max-width: 850px) {
-    .auth-card { grid-template-columns: 1fr; }
-    .auth-card-media { min-height: 220px; padding: 2rem; }
     .auth-card-form { padding: 2.5rem 1.75rem; }
 }
 </style>
@@ -153,19 +104,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <div class="auth-container">
     <div class="auth-card">
-        <!-- Media Side with Gz95b.jpg -->
-        <div class="auth-card-media">
-            <div class="auth-card-overlay"></div>
-            <div class="auth-card-media-content">
-                <span class="section-label" style="color:var(--accent);">JOIN eHOSTEL</span>
-                <h3 class="serif-heading" style="color:#ffffff;font-size:2rem;margin-bottom:0.75rem;">Your Campus Home</h3>
-                <p style="font-size:0.92rem;color:rgba(255,255,255,0.85);line-height:1.6;margin:0;">
-                    Access real-time room availability, quick applications, and official warden announcements.
-                </p>
-            </div>
-        </div>
-
-        <!-- Form Side -->
         <div class="auth-card-form">
             <div style="margin-bottom:1.75rem;">
                 <div style="font-family:var(--font-serif);font-size:2rem;color:var(--primary-dark);font-weight:500;margin-bottom:0.25rem;">Student Registration</div>
@@ -183,16 +121,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <form method="POST" action="register.php">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="nic_no">NIC No. *</label>
-                        <input type="text" id="nic_no" name="nic_no" class="input-luxury" required value="<?= h($_POST['nic_no'] ?? '') ?>" placeholder="e.g. 200012345678 or 200012345V">
-                    </div>
-                    <div class="form-group">
-                        <label>Registration No. (Auto Generated)</label>
-                        <input type="text" class="input-luxury" value="Will be generated" disabled style="background:var(--bg-secondary);">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
                         <label for="full_name">Full Name *</label>
                         <input type="text" id="full_name" name="full_name" class="input-luxury" required value="<?= h($_POST['full_name'] ?? '') ?>" placeholder="e.g. Kavindu Perera">
                     </div>
@@ -203,15 +131,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="text" id="username" name="username" class="input-luxury" required value="<?= h($_POST['username'] ?? '') ?>" placeholder="Unique username">
                 </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="email">Email Address</label>
-                        <input type="email" id="email" name="email" class="input-luxury" value="<?= h($_POST['email'] ?? '') ?>" placeholder="student@univ.ac.lk">
-                    </div>
-                    <div class="form-group">
-                        <label for="contact_no">Contact No.</label>
-                        <input type="tel" id="contact_no" name="contact_no" class="input-luxury" value="<?= h($_POST['contact_no'] ?? '') ?>" placeholder="077 123 4567">
-                    </div>
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" class="input-luxury" value="<?= h($_POST['email'] ?? '') ?>" placeholder="student@univ.ac.lk">
                 </div>
 
                 <div class="form-row">
@@ -225,12 +147,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-luxury btn-accent btn-block" style="margin-top:1.25rem;">Register Student Account</button>
+                <button type="submit" class="btn btn-luxury btn-accent btn-block" style="margin-top:1.25rem;">Sign Up</button>
             </form>
             <?php endif; ?>
 
             <div style="margin-top:1.75rem;padding-top:1.25rem;border-top:1px solid var(--border);text-align:center;font-size:0.88rem;color:var(--text-muted);">
-                Already have an account? <a href="login.php" style="font-weight:600;color:var(--primary-dark);">Sign In Here &rarr;</a>
+                Already have an account? <a href="login.php" style="font-weight:600;color:var(--primary-dark);">Login &rarr;</a>
             </div>
         </div>
     </div>

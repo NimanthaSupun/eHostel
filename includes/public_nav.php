@@ -16,8 +16,8 @@ $active = $active ?? '';
         <a href="<?= $base ?>facilities.php" class="<?= $active === 'facilities' ? 'active' : '' ?>">Facilities</a>
         <a href="<?= $base ?>rules.php" class="<?= $active === 'rules' ? 'active' : '' ?>">Rules</a>
         <a href="<?= $base ?>contact.php" class="<?= $active === 'contact' ? 'active' : '' ?>">Contact</a>
-        <a href="<?= $base ?>functionalities.php" class="<?= $active === 'func' ? 'active' : '' ?>">Features</a>
-        <a href="<?= $base ?>help.php" class="<?= $active === 'help' ? 'active' : '' ?>">Help</a>
+        <!-- <a href="<?= $base ?>functionalities.php" class="<?= $active === 'func' ? 'active' : '' ?>">Features</a> -->
+        <!-- <a href="<?= $base ?>help.php" class="<?= $active === 'help' ? 'active' : '' ?>">Help</a> -->
     </nav>
     <div class="user-chip">
         <?php if (is_logged_in()): ?>
@@ -26,7 +26,7 @@ $active = $active ?? '';
             <a href="<?= $base ?>logout.php" class="btn btn-sm btn-outline">Logout</a>
         <?php else: ?>
             <a href="<?= $base ?>login.php" class="btn btn-sm btn-outline">Student / Admin Login</a>
-            <a href="<?= $base ?>register.php" class="btn btn-sm btn-accent">Apply Now</a>
+            <a href="<?= $base ?>register.php" class="btn btn-sm btn-accent">SIGN IN</a>
         <?php endif; ?>
     </div>
 </div>

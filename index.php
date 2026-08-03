@@ -2,554 +2,474 @@
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/config/db.php';
 
-// If logged in, redirect to dashboard
 if (is_logged_in()) {
     if (current_role() === 'admin') {
-        header("Location: admin/dashboard.php");
+        header('Location: admin/dashboard.php');
     } else {
-        header("Location: student/dashboard.php");
+        header('Location: student/dashboard.php');
     }
     exit;
 }
 
-$base = '';
-$active = 'home';
-
-// Fetch stats for live availability
 $vacant_count = 0;
 $occupied_count = 0;
-$total_beds = 0;
 $student_count = 0;
 
 $res1 = mysqli_query($conn, "SELECT COUNT(*) FROM beds WHERE status = 'vacant'");
-if ($res1) $vacant_count = mysqli_fetch_row($res1)[0];
+if ($res1) {
+    $vacant_count = (int) mysqli_fetch_row($res1)[0];
+}
 
 $res2 = mysqli_query($conn, "SELECT COUNT(*) FROM beds WHERE status = 'occupied'");
-if ($res2) $occupied_count = mysqli_fetch_row($res2)[0];
-
-$total_beds = $vacant_count + $occupied_count;
+if ($res2) {
+    $occupied_count = (int) mysqli_fetch_row($res2)[0];
+}
 
 $res3 = mysqli_query($conn, "SELECT COUNT(*) FROM users WHERE role = 'student'");
-if ($res3) $student_count = mysqli_fetch_row($res3)[0];
-
-// Latest announcement
-$ann = mysqli_query($conn, "SELECT title, content, posted_date FROM announcements ORDER BY posted_date DESC LIMIT 1");
-$latest = $ann ? mysqli_fetch_assoc($ann) : null;
-
-$hero_images = [
-    'images/hSpLU.jpg',
-    'images/9dtpq.jpg',
-    'images/zMAnY.jpg',
-    'images/RV7BY.jpg',
-    'images/7FEub.jpg',
-    'images/s87QX.jpg',
-];
+if ($res3) {
+    $student_count = (int) mysqli_fetch_row($res3)[0];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>eHostel — Premier University Hostel Management System</title>
-<link rel="stylesheet" href="css/style.css?v=20260729">
-<style>
-/* Custom Hero & Section Styles for FURNIVIZ Minimalist Landing Page */
-.hero-wrapper {
-    position: relative;
-    width: 100%;
-    min-height: 92vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #ffffff;
-    overflow: hidden;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Premium Hostel and Dormitory Resident Management System. Simplify registrations, room allocations, payments, complaints, and visitors.">
+    <title>eHostel | Resident Management System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        .hero {
+            display: flex;
+            align-items: stretch;
+            justify-content: space-between;
+            gap: 0;
+            min-height: calc(100vh - 72px);
+            height: calc(100vh - 72px);
+            width: 100%;
+            margin: 0;
+            padding: 0 2rem;
+            background: #ffffff;
+            overflow: hidden;
+        }
+        .hero-content {
+            flex: 0 0 42%;
+            max-width: 620px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 2.5rem 2rem 2.5rem 0;
+        }
 
-.hero-slide {
-    position: absolute;
-    inset: 0;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    opacity: 0;
-    transform: scale(1.04);
-    transition: opacity 1.1s ease, transform 1.4s ease;
-}
 
-.hero-slide.active {
-    opacity: 1;
-    transform: scale(1);
-}
+        .hero-image {
+            flex: 1 1 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            align-self: stretch;
+            min-height: 100%;
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            padding: 5rem 1.25rem;
+            overflow: hidden;
+        }
 
-.hero-overlay {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(135deg, rgba(18, 40, 40, 0.88) 0%, rgba(18, 40, 40, 0.5) 60%, rgba(18, 40, 40, 0.75) 100%);
-    z-index: 1;
-}
+        .hero-image img {
+            width: calc(100% - 2.5rem);
+            height: calc(100% - 10rem);
+            min-height: 100%;
+            max-height: none;
+            border-radius: 0;
+            box-shadow: none;
+            object-fit: cover;
+            display: block;
+        }
 
-.hero-content {
-    position: relative;
-    z-index: 2;
-    max-width: 900px;
-    padding: 3rem 2rem;
-    text-align: center;
-}
+            
+  
 
-.hero-tagline {
-    font-size: 0.85rem;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 1.2rem;
-    font-weight: 600;
-}
 
-.hero-title {
-    font-family: var(--font-serif);
-    font-size: 4rem;
-    font-weight: 400;
-    line-height: 1.15;
-    margin-bottom: 1.5rem;
-    color: #ffffff;
-}
 
-.hero-desc {
-    font-size: 1.15rem;
-    color: rgba(255, 255, 255, 0.88);
-    max-width: 680px;
-    margin: 0 auto 2.5rem;
-    line-height: 1.7;
-    font-weight: 300;
-}
-
-.hero-actions {
-    display: flex;
-    gap: 1.25rem;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.scroll-indicator {
-    position: absolute;
-    bottom: 2rem;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.scroll-indicator span {
-    font-size: 0.68rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.7);
-}
-
-.scroll-line {
-    width: 1px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.3);
-    position: relative;
-    overflow: hidden;
-}
-
-.scroll-line::after {
-    content: '';
-    position: absolute;
-    top: -100%; left: 0; width: 100%; height: 100%;
-    background: var(--accent);
-    animation: scrollAnimation 2s infinite ease-in-out;
-}
-
-@keyframes scrollAnimation {
-    0% { top: -100%; }
-    100% { top: 100%; }
-}
-
-/* Feature Grid & Split Sections */
-.split-section {
-    display: grid;
-    grid-template-columns: 1.1fr 1fr;
-    min-height: 75vh;
-    align-items: center;
-    background: var(--surface);
-    overflow: hidden;
-}
-
-.split-section-reverse {
-    grid-template-columns: 1fr 1.1fr;
-}
-
-.split-image-wrapper {
-    position: relative;
-    height: 100%;
-    min-height: 450px;
-    overflow: hidden;
-}
-
-.split-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 1.2s var(--ease-smooth);
-}
-
-.split-image-wrapper:hover .split-image {
-    transform: scale(1.05);
-}
-
-.split-content {
-    padding: 5rem 6rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-/* Rooms Showcase */
-.showcase-section {
-    padding: 7rem 3rem;
-    background: var(--bg-primary);
-}
-
-.room-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 2rem;
-    max-width: 1300px;
-    margin: 3rem auto 0;
-}
-
-.room-card {
-    background: var(--surface);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    border: 1px solid var(--border);
-    transition: all var(--transition-normal);
-}
-
-.room-card:hover {
-    transform: translateY(-6px);
-    box-shadow: var(--shadow-lg);
-    border-color: var(--border-accent);
-}
-
-.room-card-img {
-    height: 240px;
-    width: 100%;
-    object-fit: cover;
-    transition: transform 0.8s var(--ease-smooth);
-}
-
-.room-card:hover .room-card-img {
-    transform: scale(1.04);
-}
-
-.room-card-body {
-    padding: 1.75rem;
-}
-
-.room-card-title {
-    font-family: var(--font-serif);
-    font-size: 1.5rem;
-    color: var(--primary-dark);
-    margin-bottom: 0.5rem;
-}
-
-/* Parallax Breaks */
-.parallax-break {
-    position: relative;
-    height: 60vh;
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    color: #ffffff;
-}
-
-.parallax-overlay {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(18, 40, 40, 0.76);
-}
-
-.parallax-content {
-    position: relative;
-    z-index: 2;
-    max-width: 850px;
-    padding: 2rem;
-}
-
-@media (max-width: 1024px) {
-    .split-section, .split-section-reverse { grid-template-columns: 1fr; }
-    .split-content { padding: 3.5rem 2rem; }
-    .hero-title { font-size: 2.8rem; }
-    .parallax-break { background-attachment: scroll; }
-}
-</style>
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            color: var(--success);
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+        .hero-title {
+            font-size: 3.5rem;
+            line-height: 1.15;
+            font-weight: 800;
+            margin-bottom: 4rem;
+            color: var(--text-primary);
+        }
+        .hero-title span {
+            background: linear-gradient(135deg, var(--primary-dark), var(--accent-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+        .hero-buttons a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0;
+            padding: 0.95rem 1.35rem;
+            font-size: 0.84rem;
+            letter-spacing: 0.08em;
+            font-weight: 700;
+            text-decoration: none;
+            transition: transform var(--transition-normal), box-shadow var(--transition-normal), background var(--transition-normal), color var(--transition-normal), border-color var(--transition-normal);
+            box-shadow: 0 12px 26px rgba(18, 40, 40, 0.08);
+        }
+        .hero-buttons .btn-primary-link {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            color: #ffffff !important;
+            border: 1px solid transparent;
+            border-radius: 0;
+        }
+        .hero-buttons .btn-secondary {
+            background: #ffffff;
+            border-color: var(--border-strong);
+            color: var(--primary-dark);
+            border-radius: 0;
+        }
+        .hero-buttons a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 30px rgba(18, 40, 40, 0.12);
+        }
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border-strong);
+            color: var(--text-primary);
+            padding: 0.6rem 1.25rem;
+            border-radius: 0;
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition-normal);
+        }
+        .btn-secondary:hover {
+            border-color: var(--accent);
+            color: var(--accent-dark);
+        }
+        .about-panel {
+            margin-top: 4rem;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(201, 169, 110, 0.12));
+            border: 1px solid rgba(16, 185, 129, 0.18);
+            border-radius: 0;
+            padding: 2rem;
+            box-shadow: var(--shadow-sm);
+        }
+        .about-kicker {
+            display: inline-block;
+            margin-bottom: 0.9rem;
+            color: var(--accent-dark);
+            font-size: 0.82rem;
+            font-weight: 800;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+        .about-panel p {
+            margin: 0;
+            text-align: justify;
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            line-height: 1.9;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 4rem;
+            max-width: 1250px;
+            padding: 0 2rem;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+        .stat-card {
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            padding: 2.25rem 1.5rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 8px;
+        }
+        .stat-card.vacant::before { background: var(--success); }
+        .stat-card.occupied::before { background: var(--danger); }
+        .stat-card.students::before { background: var(--accent); }
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+        }
+        .stat-icon.vacant-icon { color: var(--success); }
+        .stat-icon.occupied-icon { color: var(--danger); }
+        .stat-icon.students-icon { color: var(--accent-dark); }
+        .stat-number {
+            font-size: 2.75rem;
+            font-weight: 800;
+            line-height: 1;
+            color: var(--primary-dark);
+        }
+        .stat-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-top: 0.5rem;
+            margin-bottom: 0;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .section-shell {
+            max-width: 1250px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+        .section-title {
+            margin-top: 5rem;
+            text-align: center;
+        }
+        .section-title h2 {
+            font-family: var(--font-serif);
+            font-size: 2.6rem;
+            color: var(--primary-dark);
+            margin-bottom: 0.75rem;
+        }
+        .section-title p {
+            max-width: 760px;
+            margin: 0 auto;
+            color: var(--text-secondary);
+        }
+        .footer-simple {
+            margin-top: 5rem;
+            background: var(--primary-dark);
+            color: #ffffff;
+            padding: 1.5rem 2rem;
+        }
+        .footer-simple-inner {
+            max-width: 1250px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .social-icons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        .social-icons a {
+            color: #ffffff;
+            font-size: 1.05rem;
+            text-decoration: none;
+        }
+        @media (max-width: 968px) {
+            .hero {
+                flex-direction: column;
+                text-align: center;
+                gap: 2rem;
+                min-height: auto;
+                padding: 2rem 1rem;
+            }
+            .hero-title {
+                font-size: 2.75rem;
+            }
+            .hero-buttons {
+                justify-content: center;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .hero-content {
+                max-width: none;
+            }
+            .hero-image {
+                align-self: auto;
+                width: 100%;
+                height: auto;
+            }
+            .hero-image img {
+                min-height: 280px;
+                max-height: 420px;
+            }
+            .hero-image {
+                margin-top: 0;
+            }
+        }
+        @media (max-width: 768px) {
+            .hero {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            .features-grid {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+        }
+    </style>
 </head>
 <body>
 
 <?php include __DIR__ . '/includes/public_nav.php'; ?>
 
-<!-- Hero Section with zMAnY.jpg -->
-<section class="hero-wrapper" id="hero-wrapper">
-    <?php foreach ($hero_images as $index => $heroImage): ?>
-        <div class="hero-slide <?= $index === 0 ? 'active' : '' ?>" style="background-image: url('<?= h($heroImage) ?>');"></div>
-    <?php endforeach; ?>
-    <div class="hero-overlay"></div>
-    <div class="hero-content reveal">
-        <span class="hero-tagline">University Resident Portal</span>
-        <h1 class="hero-title">Elevate Your University Accommodation Experience</h1>
-        <p class="hero-desc">
-            Welcome to eHostel. Seamless room application, live occupancy tracking, secure resident records, and instant notices — all within a refined digital environment.
-        </p>
-        <div class="hero-actions">
-            <a href="register.php" class="btn btn-luxury btn-accent">Apply For Hostel</a>
-            <a href="facilities.php" class="btn btn-luxury btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.6);">Explore Facilities</a>
-        </div>
-    </div>
-
-    <div class="scroll-indicator">
-        <span>Scroll Down</span>
-        <div class="scroll-line"></div>
-    </div>
-</section>
-
-<!-- Section 1: Split Section - About eHostel -->
-<section class="split-section reveal">
-    <div class="split-image-wrapper">
-        <img src="images/Gemini_Generated_Image_3rnsg43rnsg43rns.png" alt="University Hostel Living Room" class="split-image">
-    </div>
-    <div class="split-content">
-        <span class="section-label">THE eHOSTEL EXPERIENCE</span>
-        <h2 class="serif-heading" style="margin-bottom:1.25rem;">A Modern Standard in University Living</h2>
-        <p style="font-size:1.02rem;line-height:1.8;margin-bottom:1.75rem;">
-            Designed specifically for modern university students, eHostel combines real-time bed allocation, administrative transparency, and quiet study environments. Located within walking distance of key university faculties, libraries, and transport hubs.
-        </p>
-        <div>
-            <a href="facilities.php" class="btn btn-luxury btn-outline">Read About Our Premises &rarr;</a>
-        </div>
-    </div>
-</section>
-
-<!-- Section 2: Showcase Section - Rooms -->
-<section class="showcase-section reveal">
-    <div style="text-align:center;max-width:700px;margin:0 auto;">
-        <span class="section-label">ACCOMMODATION OPTIONS</span>
-        <h2 class="section-heading-center">Designed for Focus &amp; Comfort</h2>
-        <p>Explore our single and shared room configurations, equipped with dedicated study desks and high-speed Wi-Fi.</p>
-    </div>
-
-    <div class="room-grid">
-        <div class="room-card">
-            <div style="overflow:hidden;">
-                <img src="images/Gemini_Generated_Image_5f4nif5f4nif5f4n.png" alt="Single Study Suite" class="room-card-img">
-            </div>
-            <div class="room-card-body">
-                <span class="badge badge-success" style="margin-bottom:0.6rem;">Private Unit</span>
-                <h3 class="room-card-title">Single Study Suite</h3>
-                <p style="font-size:0.9rem;margin-bottom:1.25rem;">Private room designed for maximum quietness and individual academic focus with ergonomic workspace.</p>
-                <a href="facilities.php" style="font-weight:600;font-size:0.85rem;color:var(--accent-dark);">View Room Details &rarr;</a>
+<main>
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title" id="welcome-title">Elevate Your <span>Hostel stay</span> Experience.</h1>
+            <p id="welcome-description" style="text-align:justify; color:var(--text-secondary); font-size:1.05rem; line-height:1.8;">
+                Welcome to eHostel, your ultimate home away from home. We provide safe, comfortable,
+                and affordable living spaces designed specifically for university students. Enjoy 24/7 security, clean study areas,
+                and a vibrant community. Book your perfect room in just a few clicks and experience hassle-free student living today.
+            </p>
+            <div class="hero-buttons" id="welcome-buttons">
+                <a href="login.php" class="btn-primary-link">Get Started</a>
+                <a href="facilities.php" class="btn-secondary">Explore Rooms Availability</a>
             </div>
         </div>
+        <div class="hero-image">
+            <img src="images/Gemini_Generated_Image_3rnsg43rnsg43rns.png" alt="eHostel hostel room" />
+        </div>
+    </section>
 
-        <div class="room-card">
-            <div style="overflow:hidden;">
-                <img src="images/Gemini_Generated_Image_99wmm299wmm299wm.png" alt="Double Shared Room" class="room-card-img">
-            </div>
-            <div class="room-card-body">
-                <span class="badge badge-warning" style="margin-bottom:0.6rem;">2 Beds</span>
-                <h3 class="room-card-title">Double Sharing Room</h3>
-                <p style="font-size:0.9rem;margin-bottom:1.25rem;">Ideal balance of companionship and quiet study space. Includes personal wardrobes and twin desks.</p>
-                <a href="facilities.php" style="font-weight:600;font-size:0.85rem;color:var(--accent-dark);">View Room Details &rarr;</a>
-            </div>
+    <section class="section-shell">
+        <div class="about-panel">
+            <span class="about-kicker">About us</span>
+            <p>
+                Welcome to eHostel, a comfortable and affordable hostel designed exclusively for university students in
+                the heart of Colombo 3. Our mission is to provide a welcoming environment where students can focus on their academic goals while enjoying a convenient
+                and enjoyable lifestyle. Located close to leading universities, the hostel offers easy access to public transportation, supermarkets, restaurants, cafés,
+                pharmacies, hospitals, banks, bookstores, and recreational areas. With everything students need just minutes away, eHostel provides the perfect balance of comfort,
+                convenience, and community, making it an ideal place to live, learn, and create lasting friendships throughout university life.
+            </p>
+        </div>
+    </section>
+
+    <section class="features-grid">
+        <div class="card">
+            <h3 style="text-align:center;">Bedrooms</h3>
+            <img src="images/images-new/a-bunk-bed-with-two-desks-and-a-laptop-photo.jpeg" alt="Bedrooms" />
+            <p style="text-align:justify">Explore our three room types, single, double and triple sharing room options, ensuring a comfortable stay for every student.</p>
         </div>
 
-        <div class="room-card">
-            <div style="overflow:hidden;">
-                <img src="images/Gemini_Generated_Image_o2fwhdo2fwhdo2fw.png" alt="Triple Sharing Room" class="room-card-img">
-            </div>
-            <div class="room-card-body">
-                <span class="badge badge-muted" style="margin-bottom:0.6rem;">3 Beds</span>
-                <h3 class="room-card-title">Triple Shared Dormitory</h3>
-                <p style="font-size:0.9rem;margin-bottom:1.25rem;">Budget-friendly option featuring custom bunk beds, ample storage space, and individual reading lights.</p>
-                <a href="facilities.php" style="font-weight:600;font-size:0.85rem;color:var(--accent-dark);">View Room Details &rarr;</a>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Section 3: Parallax Image Break -->
-<section class="parallax-break reveal" style="background-image: url('images/Gz95b.jpg');">
-    <div class="parallax-overlay"></div>
-    <div class="parallax-content">
-        <span class="section-label" style="color:var(--accent);">STREAMLINED PROCESS</span>
-        <h2 class="serif-heading" style="color:#fff;font-size:3rem;margin-bottom:1.5rem;">Apply Online &rarr; Instant Verification &rarr; Move In</h2>
-        <a href="register.php" class="btn btn-luxury btn-accent">Submit Student Application</a>
-    </div>
-</section>
-
-<!-- Section 4: Live Availability Stats Section -->
-<section style="padding:6rem 3rem;background:var(--surface);" class="reveal">
-    <div style="max-width:1200px;margin:0 auto;">
-        <div style="text-align:center;margin-bottom:3.5rem;">
-            <span class="section-label">REAL-TIME DASHBOARD</span>
-            <h2 class="section-heading-center">Current Hostel Status</h2>
-            <p>Live metrics pulled directly from our central bed and occupancy database.</p>
+        <div class="card">
+            <h3 style="text-align:center;">Study Area</h3>
+            <img src="images/images-new/images.jpg" alt="Study Area" />
+            <p style="text-align:justify">Dedicated study spaces are available on every floor, with three study areas that can comfortably accommodate up to 75 students at a time.</p>
         </div>
 
-        <div class="card-grid">
-            <div class="stat-card" style="text-align:center;">
-                <div class="num" style="font-size:3rem;color:var(--success);"><?= $vacant_count ?></div>
-                <div class="label">Vacant Beds Available</div>
-            </div>
-            <div class="stat-card" style="text-align:center;">
-                <div class="num" style="font-size:3rem;color:var(--warning);"><?= $occupied_count ?></div>
-                <div class="label">Beds Currently Occupied</div>
-            </div>
-            <div class="stat-card" style="text-align:center;">
-                <div class="num" style="font-size:3rem;color:var(--primary);"><?= $student_count ?></div>
-                <div class="label">Registered Students</div>
-            </div>
+        <div class="card">
+            <h3 style="text-align:center;">Kitchen &amp; Dinning Area</h3>
+            <img src="images/images-new/youth-hostel-luxembourg-city-restaurant-melting-pot-24.avif" alt="Kitchen and Dining Area" />
+            <p style="text-align:justify">The hostel provides one spacious dining area alongside a shared kitchen per each floor, where students can cook, dine together or enjoy meals delivered from local eateries.</p>
         </div>
-    </div>
-</section>
+    </section>
 
-<!-- Section 5: Split Section - Key Features & Capabilities -->
-<section class="split-section split-section-reverse reveal">
-    <div class="split-content" style="padding:5rem 6rem;">
-        <span class="section-label">CORE CAPABILITIES</span>
-        <h2 class="serif-heading" style="margin-bottom:1.25rem;">Built for Administrative Transparency &amp; Convenience</h2>
-        <p style="font-size:1.02rem;line-height:1.8;margin-bottom:1.75rem;">
-            eHostel powers every stage of university accommodation — from initial online application forms to automated bed assignments, warden reviews, and noticeboard announcements.
-        </p>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem;">
-            <div>
-                <strong style="color:var(--primary-dark);display:block;font-size:0.95rem;margin-bottom:0.25rem;">🔐 Role Access</strong>
-                <span style="font-size:0.85rem;color:var(--text-secondary);">Role-based student and warden portals.</span>
-            </div>
-            <div>
-                <strong style="color:var(--primary-dark);display:block;font-size:0.95rem;margin-bottom:0.25rem;">📄 Online Apply</strong>
-                <span style="font-size:0.85rem;color:var(--text-secondary);">Direct room preference applications.</span>
-            </div>
-            <div>
-                <strong style="color:var(--primary-dark);display:block;font-size:0.95rem;margin-bottom:0.25rem;">🛏️ Bed Allocation</strong>
-                <span style="font-size:0.85rem;color:var(--text-secondary);">Automated vacant bed assignment.</span>
-            </div>
-            <div>
-                <strong style="color:var(--primary-dark);display:block;font-size:0.95rem;margin-bottom:0.25rem;">📢 Noticeboard</strong>
-                <span style="font-size:0.85rem;color:var(--text-secondary);">Instant official warden notices.</span>
-            </div>
-        </div>
-
-        <div>
-            <a href="functionalities.php" class="btn btn-luxury btn-outline">Explore All System Features &rarr;</a>
-        </div>
+    <div class="section-shell" style="text-align:center; margin-top: 2rem;">
+        <a href="facilities.php" class="btn-secondary" style="display:inline-flex;">Learn more</a>
     </div>
 
-    <div class="split-image-wrapper">
-        <img src="images/Gemini_Generated_Image_pq1l7vpq1l7vpq1l.png" alt="Hostel Common Study Area" class="split-image">
-    </div>
-</section>
+    <section class="section-shell">
+        <h2 style="margin-top: 8rem; text-align: center; font-family:var(--font-serif); color:var(--primary-dark);">Live Availability</h2>
+        <p style="text-align:center;font-size:1.1rem;color:var(--text-secondary);">A quick snapshot of where things stand across the hostel right now.</p>
 
-<!-- Section 6: Latest Noticeboard Section -->
-<?php if ($latest): ?>
-<section style="padding:6rem 3rem;background:var(--bg-primary);" class="reveal">
-    <div style="max-width:1100px;margin:0 auto;">
-        <div style="text-align:center;margin-bottom:3rem;">
-            <span class="section-label">COMMUNICATION BOARD</span>
-            <h2 class="section-heading-center">Latest Hostel Notice</h2>
-        </div>
-        <div class="card" style="border-left:4px solid var(--accent);box-shadow:var(--shadow-md);padding:3rem;background:var(--surface);">
-            <h3 style="color:var(--primary-dark);font-family:var(--font-serif);font-size:2.2rem;margin-bottom:0.85rem;"><?= h($latest['title']) ?></h3>
-            <p style="color:var(--text-secondary);font-size:1.05rem;margin:1rem 0 1.5rem;line-height:1.8;"><?= h($latest['content']) ?></p>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:1.25rem;border-top:1px solid var(--border);flex-wrap:wrap;gap:1rem;">
-                <span class="badge badge-success" style="padding:0.35rem 0.85rem;font-size:0.75rem;">Official Notice</span>
-                <span style="font-size:0.85rem;color:var(--text-muted);font-weight:500;">
-                    Posted on <?= date('d M Y, h:i A', strtotime($latest['posted_date'])) ?> &middot; Hostel Administration Office
-                </span>
+        <section class="stats-grid" id="live-stats">
+            <div class="card stat-card vacant">
+                <div class="stat-icon vacant-icon"><i class="fa-solid fa-door-open"></i></div>
+                <div class="stat-number" id="stat-vacant"><?= $vacant_count ?></div>
+                <p class="stat-label">Vacant Beds Available</p>
             </div>
+
+            <div class="card stat-card occupied">
+                <div class="stat-icon occupied-icon"><i class="fa-solid fa-lock"></i></div>
+                <div class="stat-number" id="stat-occupied"><?= $occupied_count ?></div>
+                <p class="stat-label">Beds Currently Occupied</p>
+            </div>
+
+            <div class="card stat-card students">
+                <div class="stat-icon students-icon"><i class="fa-solid fa-user-graduate"></i></div>
+                <div class="stat-number" id="stat-students"><?= $student_count ?></div>
+                <p class="stat-label">Registered Students</p>
+            </div>
+        </section>
+    </section>
+
+    <section class="section-shell">
+        <h2 style="margin-top: 6rem; text-align: center; font-family:var(--font-serif); color:var(--primary-dark);">Special Features</h2>
+
+        <section class="features-grid" style="margin-top: 2.5rem;">
+            <div class="card">
+                <h3>🚪 Room Allocation</h3>
+                <p>Track real-time room availability, occupants count, types of rooms, and apply instantly.</p>
+            </div>
+            <div class="card">
+                <h3>📋 Visitor Records</h3>
+                <p>Safety register logbook to track guest check-ins and check-outs securely.</p>
+            </div>
+            <div class="card">
+                <h3>📢 Digital Noticeboard</h3>
+                <p>Receive announcements about repairs, events, or regulatory policies.</p>
+            </div>
+            <div class="card">
+                <h3>🔒 24/7 Security</h3>
+                <p>CCTV-monitored entrances, a manned front desk around active for 24/7.</p>
+            </div>
+            <div class="card">
+                <h3>🧺 Laundry Services</h3>
+                <p>On-site self-service facilities are available daily, or you can pay for our convenient drop-off laundry service to have it done for you.</p>
+            </div>
+        </section>
+
+        <div style="text-align:center; margin-top: 2rem;">
+            <a href="facilities.php" class="btn-secondary" style="display:inline-flex;">Learn more</a>
+        </div>
+    </section>
+</main>
+
+<footer class="footer-simple">
+    <div class="footer-simple-inner" style="justify-content:space-between; gap:1.5rem; align-items:center;">
+        <div class="social-icons">
+            <a href="https://www.google.com/"><i class="fa-brands fa-facebook"></i></a>
+            <a href="https://www.google.com/"><i class="fa-brands fa-youtube"></i></a>
+            <a href="https://www.google.com/"><i class="fa-brands fa-twitter"></i></a>
+            <a href="https://www.google.com/"><i class="fa-brands fa-instagram"></i></a>
+        </div>
+        <div style="display:flex; align-items:center; gap:1.25rem; flex-wrap:wrap; justify-content:center; color:rgba(255,255,255,0.94);">
+            <span>📍 University Campus, Colombo 03, Sri Lanka</span>
+            <span>✉️ ssp@ucsc.cmb.ac.lk</span>
+            <span>📞 +94 11 258 1234</span>
         </div>
     </div>
-</section>
-<?php endif; ?>
-
-<!-- Section 7: Parallax CTA Break -->
-<section class="parallax-break reveal" style="background-image: url('images/6Smer.jpg');min-height:55vh;">
-    <div class="parallax-overlay" style="background:rgba(18, 40, 40, 0.82);"></div>
-    <div class="parallax-content">
-        <span class="section-label" style="color:var(--accent);">READY TO JOIN eHOSTEL?</span>
-        <h2 class="serif-heading" style="color:#fff;font-size:3.2rem;margin-bottom:1.25rem;">Reserve Your Campus Room Today</h2>
-        <p style="color:rgba(255,255,255,0.85);font-size:1.1rem;margin-bottom:2.25rem;max-width:650px;margin-left:auto;margin-right:auto;">
-            Submit your student accommodation application online in just a few clicks and monitor approval status.
-        </p>
-        <div style="display:flex;gap:1.25rem;justify-content:center;flex-wrap:wrap;">
-            <a href="register.php" class="btn btn-luxury btn-accent">Apply For Accommodation</a>
-            <a href="contact.php" class="btn btn-luxury btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.6);">Contact Warden Office</a>
-        </div>
-    </div>
-</section>
-
-<?php include __DIR__ . '/includes/footer.php'; ?>
-
-<!-- Scroll Reveal Script (Pure Vanilla JS) -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -20px 0px'
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('revealed');
-                observer.unobserve(entry.target);
-            }
-        });
-    }, observerOptions);
-
-    document.querySelectorAll('.reveal').forEach(el => {
-        observer.observe(el);
-    });
-
-    const hero = document.getElementById('hero-wrapper');
-    if (hero) {
-        const slides = Array.from(hero.querySelectorAll('.hero-slide'));
-
-        if (slides.length > 0) {
-            let currentIndex = 0;
-
-            const preloadImage = (src) => {
-                const image = new Image();
-                image.src = src;
-            };
-
-            slides.forEach(slide => {
-                const backgroundImage = slide.style.backgroundImage;
-                const match = backgroundImage.match(/url\(["']?(.*?)["']?\)/);
-                if (match && match[1]) {
-                    preloadImage(match[1]);
-                }
-            });
-
-            window.setInterval(() => {
-                slides[currentIndex].classList.remove('active');
-                currentIndex = (currentIndex + 1) % slides.length;
-                slides[currentIndex].classList.add('active');
-            }, 3500);
-        }
-    }
-});
-</script>
+</footer>
 
 </body>
 </html>

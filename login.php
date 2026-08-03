@@ -65,45 +65,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     border: 1px solid var(--border);
     box-shadow: var(--shadow-lg);
     overflow: hidden;
-    display: grid;
-    grid-template-columns: 1fr 1.15fr;
-}
-
-.auth-card-media {
-    position: relative;
-    background-image: url('images/zMAnY.jpg');
-    background-size: cover;
-    background-position: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding: 3rem 2.5rem;
-    color: #ffffff;
-    min-height: 480px;
-}
-
-.auth-card-overlay {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(180deg, rgba(18, 40, 40, 0.4) 0%, rgba(18, 40, 40, 0.92) 100%);
-    z-index: 1;
-}
-
-.auth-card-media-content {
-    position: relative;
-    z-index: 2;
 }
 
 .auth-card-form {
-    padding: 3.5rem 3rem;
+    padding: 3rem 2.5rem;
     display: flex;
     flex-direction: column;
     justify-content: center;
 }
 
 @media (max-width: 850px) {
-    .auth-card { grid-template-columns: 1fr; }
-    .auth-card-media { min-height: 220px; padding: 2rem; }
     .auth-card-form { padding: 2.5rem 1.75rem; }
 }
 </style>
@@ -124,19 +95,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <div class="auth-container">
     <div class="auth-card">
-        <!-- Media Side with zMAnY.jpg -->
-        <div class="auth-card-media">
-            <div class="auth-card-overlay"></div>
-            <div class="auth-card-media-content">
-                <span class="section-label" style="color:var(--accent);">UNIVERSITY LIVING</span>
-                <h3 class="serif-heading" style="color:#ffffff;font-size:2rem;margin-bottom:0.75rem;">Refined Academic Living</h3>
-                <p style="font-size:0.92rem;color:rgba(255,255,255,0.85);line-height:1.6;margin:0;">
-                    Manage your accommodation requests, room details, and notices through our unified resident platform.
-                </p>
-            </div>
-        </div>
-
-        <!-- Form Side -->
         <div class="auth-card-form">
             <div style="margin-bottom:1.75rem;">
                 <div style="font-family:var(--font-serif);font-size:2rem;color:var(--primary-dark);font-weight:500;margin-bottom:0.25rem;">Sign In</div>
@@ -156,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label for="password">Password</label>
                     <input type="password" id="password" name="password" class="input-luxury" required placeholder="Your password">
                 </div>
-                <button type="submit" class="btn btn-luxury btn-accent btn-block" style="margin-top:1.25rem;">Sign In to Portal</button>
+                <button type="submit" class="btn btn-luxury btn-accent btn-block" style="margin-top:1.25rem;">Login</button>
             </form>
 
             <div style="margin-top:1.75rem;padding:1rem 1.2rem;background:var(--bg-secondary);border-radius:var(--radius-md);font-size:0.83rem;color:var(--text-secondary);border:1px solid var(--border);">
@@ -165,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div style="margin-top:1.75rem;padding-top:1.25rem;border-top:1px solid var(--border);text-align:center;font-size:0.88rem;color:var(--text-muted);">
-                Don't have an account yet? <a href="register.php" style="font-weight:600;color:var(--primary-dark);">Register Student Account &rarr;</a>
+                Don't have an account? <a href="register.php" style="font-weight:600;color:var(--primary-dark);">Sign Up &rarr;</a>
             </div>
         </div>
     </div>

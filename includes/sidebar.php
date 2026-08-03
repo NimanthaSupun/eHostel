@@ -22,7 +22,6 @@ $role = current_role();
     <div class="sidebar">
         <?php if ($role === 'admin'): ?>
             <a href="<?= $base ?>admin/dashboard.php" class="side-link <?= $active === 'dash' ? 'active' : '' ?>">🏠 Dashboard</a>
-            <a href="<?= $base ?>admin/hostel_manage.php" class="side-link <?= $active === 'hostels' ? 'active' : '' ?>">🏢 Hostels &amp; Buildings</a>
             <a href="<?= $base ?>admin/manage_rooms.php" class="side-link <?= $active === 'rooms' ? 'active' : '' ?>">🛏️ Rooms &amp; Beds</a>
             <a href="<?= $base ?>admin/manage_students.php" class="side-link <?= $active === 'students' ? 'active' : '' ?>">🧑‍🎓 Student Records</a>
             <a href="<?= $base ?>admin/applications.php" class="side-link <?= $active === 'apps' ? 'active' : '' ?>">📄 Review Applications</a>
