@@ -7,30 +7,92 @@ $uid = $_SESSION['user_id'];
 $error = '';
 $success = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $full_name = trim($_POST['full_name'] ?? '');
-    $email     = trim($_POST['email'] ?? '');
-    $contact   = trim($_POST['contact_no'] ?? '');
-    $address   = trim($_POST['address'] ?? '');
-
-    if ($full_name === '') {
-        $error = 'Full name is required.';
-    } else {
-        $stmt = mysqli_prepare($conn, "UPDATE users SET full_name=?, email=?, contact_no=?, address=? WHERE user_id=?");
-        mysqli_stmt_bind_param($stmt, "ssssi", $full_name, $email, $contact, $address, $uid);
-        if (mysqli_stmt_execute($stmt)) {
-            $_SESSION['full_name'] = $full_name;
-            $success = 'Profile details updated successfully.';
-        } else {
-            $error = 'Could not update profile details.';
-        }
-    }
-}
-
 $stmt = mysqli_prepare($conn, "SELECT * FROM users WHERE user_id = ?");
 mysqli_stmt_bind_param($stmt, "i", $uid);
 mysqli_stmt_execute($stmt);
 $user = mysqli_stmt_get_result($stmt)->fetch_assoc();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $full_name = trim($_POST['full_name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $contact = trim($_POST['contact_no'] ?? '');
+    $nic_no = trim($_POST['nic_no'] ?? '');
+    $address = trim($_POST['address'] ?? '');
+    $academic_year = trim($_POST['academic_year'] ?? '');
+    $district = trim($_POST['district'] ?? '');
+    $campus = trim($_POST['campus'] ?? '');
+    $faculty = trim($_POST['faculty'] ?? '');
+    $degree_program = trim($_POST['degree_program'] ?? '');
+    $emergency_contact = trim($_POST['emergency_contact'] ?? '');
+    $gender = trim($_POST['gender'] ?? '');
+    $dob = trim($_POST['date_of_birth'] ?? '');
+    $new_password = trim($_POST['password'] ?? '');
+
+    if ($full_name === '') {
+        $error = 'Full name is required.';
+    } else {
+        mysqli_begin_transaction($conn);
+        try {
+            $updateFields = [
+                'full_name' => $full_name,
+                'email' => $email === '' ? ($user['email'] ?? null) : $email,
+                'contact_no' => $contact === '' ? ($user['contact_no'] ?? null) : $contact,
+                'nic_no' => $nic_no === '' ? ($user['nic_no'] ?? null) : $nic_no,
+                'address' => $address === '' ? ($user['address'] ?? null) : $address,
+                'academic_year' => $academic_year === '' ? ($user['academic_year'] ?? null) : $academic_year,
+                'district' => $district === '' ? ($user['district'] ?? null) : $district,
+                'campus' => $campus === '' ? ($user['campus'] ?? null) : $campus,
+                'faculty' => $faculty === '' ? ($user['faculty'] ?? null) : $faculty,
+                'degree_program' => $degree_program === '' ? ($user['degree_program'] ?? null) : $degree_program,
+                'emergency_contact' => $emergency_contact === '' ? ($user['emergency_contact'] ?? null) : $emergency_contact,
+                'gender' => $gender === '' ? null : $gender,
+                'date_of_birth' => $dob === '' ? null : $dob,
+            ];
+
+            $setSql = [];
+            $types = '';
+            $params = [];
+
+            foreach ($updateFields as $field => $value) {
+                $setSql[] = "$field = ?";
+                $types .= 's';
+                $params[] = $value;
+            }
+
+            if ($new_password !== '') {
+                if (strlen($new_password) < 4) {
+                    throw new Exception('Password must be at least 4 characters long.');
+                }
+                $hash = password_hash($new_password, PASSWORD_DEFAULT);
+                $setSql[] = 'password = ?';
+                $types .= 's';
+                $params[] = $hash;
+            }
+
+            $stmt = mysqli_prepare($conn, "UPDATE users SET " . implode(', ', $setSql) . " WHERE user_id=?");
+            $types .= 'i';
+            $params[] = $uid;
+
+            $refs = [];
+            foreach ($params as $key => $value) {
+                $refs[$key] = &$params[$key];
+            }
+            $args = array_merge([$stmt, $types], $refs);
+            call_user_func_array('mysqli_stmt_bind_param', $args);
+
+            if (!mysqli_stmt_execute($stmt)) {
+                throw new Exception('Could not update profile details.');
+            }
+
+            $_SESSION['full_name'] = $full_name;
+            mysqli_commit($conn);
+            $success = 'Profile details updated successfully.';
+        } catch (Exception $e) {
+            mysqli_rollback($conn);
+            $error = $e->getMessage();
+        }
+    }
+}
 
 $studentId = $user['student_id'] ?? '';
 $studentIdLabel = $studentId !== '' ? h($studentId) : 'Pending';
@@ -88,12 +150,12 @@ $active = 'profile';
         </div>
         <div class="form-row">
             <div class="form-group">
-                <label>NIC No.</label>
-                <input type="text" class="input-luxury" value="<?= h($user['nic_no'] ?? 'Not Set') ?>" disabled style="background:var(--bg-secondary);">
+                <label for="nic_no">NIC No.</label>
+                <input type="text" id="nic_no" name="nic_no" class="input-luxury" value="<?= h($user['nic_no'] ?? '') ?>">
             </div>
             <div class="form-group">
-                <label>Academic Year</label>
-                <input type="text" class="input-luxury" value="<?= h($user['academic_year'] ?? 'Not Set') ?>" disabled style="background:var(--bg-secondary);">
+                <label for="academic_year">Academic Year</label>
+                <input type="text" id="academic_year" name="academic_year" class="input-luxury" value="<?= h($user['academic_year'] ?? '') ?>">
             </div>
         </div>
         <div class="form-row">
@@ -104,6 +166,51 @@ $active = 'profile';
             <div class="form-group">
                 <label for="contact_no">Contact No.</label>
                 <input type="tel" id="contact_no" name="contact_no" class="input-luxury" value="<?= h($user['contact_no']) ?>">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="district">District</label>
+                <input type="text" id="district" name="district" class="input-luxury" value="<?= h($user['district'] ?? '') ?>">
+            </div>
+            <div class="form-group">
+                <label for="campus">Campus</label>
+                <input type="text" id="campus" name="campus" class="input-luxury" value="<?= h($user['campus'] ?? '') ?>">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="faculty">Faculty</label>
+                <input type="text" id="faculty" name="faculty" class="input-luxury" value="<?= h($user['faculty'] ?? '') ?>">
+            </div>
+            <div class="form-group">
+                <label for="degree_program">Degree Program</label>
+                <input type="text" id="degree_program" name="degree_program" class="input-luxury" value="<?= h($user['degree_program'] ?? '') ?>">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="emergency_contact">Emergency Contact</label>
+                <input type="tel" id="emergency_contact" name="emergency_contact" class="input-luxury" value="<?= h($user['emergency_contact'] ?? '') ?>">
+            </div>
+            <div class="form-group">
+                <label for="gender">Gender</label>
+                <select id="gender" name="gender" class="input-luxury">
+                    <option value="" <?= ($user['gender'] ?? '') === '' ? 'selected' : '' ?>>Select Gender</option>
+                    <option value="Male" <?= ($user['gender'] ?? '') === 'Male' ? 'selected' : '' ?>>Male</option>
+                    <option value="Female" <?= ($user['gender'] ?? '') === 'Female' ? 'selected' : '' ?>>Female</option>
+                    <option value="Other" <?= ($user['gender'] ?? '') === 'Other' ? 'selected' : '' ?>>Other</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="date_of_birth">Date of Birth</label>
+                <input type="date" id="date_of_birth" name="date_of_birth" class="input-luxury" value="<?= h($user['date_of_birth'] ?? '') ?>">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" class="input-luxury" placeholder="Leave blank to keep current password">
             </div>
         </div>
         <div class="form-group">

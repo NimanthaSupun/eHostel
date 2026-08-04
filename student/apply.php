@@ -7,7 +7,7 @@ $uid = $_SESSION['user_id'];
 $error = '';
 $success = '';
 
-$userStmt = mysqli_prepare($conn, "SELECT full_name, nic_no, contact_no, emergency_contact, address, district, academic_year, campus, faculty, degree_program, distance_km FROM users WHERE user_id = ?");
+$userStmt = mysqli_prepare($conn, "SELECT full_name, nic_no, contact_no, emergency_contact, address, district, academic_year, campus, faculty, degree_program, distance_km, gender, date_of_birth FROM users WHERE user_id = ?");
 mysqli_stmt_bind_param($userStmt, "i", $uid);
 mysqli_stmt_execute($userStmt);
 $studentProfile = mysqli_stmt_get_result($userStmt)->fetch_assoc() ?: [];
@@ -24,10 +24,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canApply) {
     $dbRoomType = $preferredRoomType === 'single' ? 'single' : 'shared';
     $nicNo = trim($_POST['nic_no'] ?? '');
     $contactNo = trim($_POST['contact_no'] ?? '');
+    $emergencyContact = trim($_POST['emergency_contact'] ?? '');
     $address = trim($_POST['address'] ?? '');
     $academicYear = trim($_POST['academic_year'] ?? '');
+    $district = trim($_POST['district'] ?? '');
+    $campus = trim($_POST['campus'] ?? '');
+    $faculty = trim($_POST['faculty'] ?? '');
+    $degreeProgram = trim($_POST['degree_program'] ?? '');
+    $gender = trim($_POST['gender'] ?? '');
+    $dateOfBirth = trim($_POST['date_of_birth'] ?? '');
     $distanceKmRaw = trim($_POST['distance_km'] ?? '');
     $distanceKm = $distanceKmRaw === '' ? null : (float) $distanceKmRaw;
+    $gender = $gender === '' ? null : $gender;
+    $dateOfBirth = $dateOfBirth === '' ? null : $dateOfBirth;
 
     if ($nicNo === '' || $contactNo === '' || $address === '' || $academicYear === '') {
         $error = 'Please complete NIC, contact number, address, and academic year.';
@@ -36,8 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canApply) {
     } else {
         mysqli_begin_transaction($conn);
         try {
-            $updateUserStmt = mysqli_prepare($conn, "UPDATE users SET nic_no=?, contact_no=?, address=?, academic_year=? WHERE user_id=?");
-            mysqli_stmt_bind_param($updateUserStmt, "ssssi", $nicNo, $contactNo, $address, $academicYear, $uid);
+            $updateUserStmt = mysqli_prepare($conn, "UPDATE users SET nic_no=?, contact_no=?, emergency_contact=?, address=?, academic_year=?, district=?, campus=?, faculty=?, degree_program=?, distance_km=?, gender=?, date_of_birth=? WHERE user_id=?");
+            mysqli_stmt_bind_param($updateUserStmt, "sssssssssdssi", $nicNo, $contactNo, $emergencyContact, $address, $academicYear, $district, $campus, $faculty, $degreeProgram, $distanceKm, $gender, $dateOfBirth, $uid);
             mysqli_stmt_execute($updateUserStmt);
 
             $ins = mysqli_prepare($conn, "INSERT INTO applications (user_id, preferred_room_type, nic_no, address, academic_year, applied_date, status) VALUES (?, ?, ?, ?, ?, CURDATE(), 'pending')");
@@ -120,6 +129,22 @@ $active = 'apply';
                 <div class="form-group">
                     <label for="emergency_contact">Emergency Contact</label>
                     <input type="text" id="emergency_contact" name="emergency_contact" class="input-luxury" value="<?= h($_POST['emergency_contact'] ?? ($studentProfile['emergency_contact'] ?? '')) ?>" placeholder="Parent/Guardian contact">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="gender">Gender</label>
+                    <select id="gender" name="gender" class="input-luxury">
+                        <option value="" <?= (($_POST['gender'] ?? ($studentProfile['gender'] ?? '')) === '') ? 'selected' : '' ?>>Select Gender</option>
+                        <option value="Male" <?= (($_POST['gender'] ?? ($studentProfile['gender'] ?? '')) === 'Male') ? 'selected' : '' ?>>Male</option>
+                        <option value="Female" <?= (($_POST['gender'] ?? ($studentProfile['gender'] ?? '')) === 'Female') ? 'selected' : '' ?>>Female</option>
+                        <option value="Other" <?= (($_POST['gender'] ?? ($studentProfile['gender'] ?? '')) === 'Other') ? 'selected' : '' ?>>Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="date_of_birth">Date of Birth</label>
+                    <input type="date" id="date_of_birth" name="date_of_birth" class="input-luxury" value="<?= h($_POST['date_of_birth'] ?? ($studentProfile['date_of_birth'] ?? '')) ?>">
                 </div>
             </div>
 

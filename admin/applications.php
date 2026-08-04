@@ -59,8 +59,11 @@ $apps = mysqli_query($conn, "SELECT ap.*, u.full_name, u.email, u.student_id, u.
                               ORDER BY FIELD(ap.status,'pending','approved','rejected'), ap.application_id DESC");
 
 $vacantBeds = mysqli_query($conn, "SELECT b.bed_id, b.bed_number, r.room_number, r.room_type
-                                    FROM beds b JOIN rooms r ON b.room_id = r.room_id
-                                    WHERE b.status='vacant' AND (r.room_number LIKE 'F1/%' OR r.room_number LIKE 'F2/%')
+                                    FROM beds b
+                                    JOIN rooms r ON b.room_id = r.room_id
+                                    LEFT JOIN allocations a ON a.bed_id = b.bed_id
+                                    WHERE b.status='vacant' AND a.bed_id IS NULL
+                                      AND (r.room_number LIKE 'F1/%' OR r.room_number LIKE 'F2/%')
                                     ORDER BY r.room_number, b.bed_number");
 $bedOptions = [];
 while ($b = mysqli_fetch_assoc($vacantBeds)) { $bedOptions[] = $b; }
@@ -124,9 +127,9 @@ $active = 'apps';
                 <td>
                     <?php if ($a['status'] === 'pending'): ?>
                         <?php if (count($bedOptions) > 0): ?>
-                        <form method="POST" action="applications.php" style="display:flex;gap:0.4rem;align-items:center;">
+                        <form method="POST" action="applications.php" style="display:flex;flex-direction:column;align-items:stretch;gap:0.45rem;max-width:260px;">
                             <input type="hidden" name="approve_id" value="<?= $a['application_id'] ?>">
-                            <select name="bed_id" required class="input-luxury" style="padding:0.4rem 0.6rem;font-size:0.8rem;max-width:200px;">
+                            <select name="bed_id" required class="input-luxury" style="padding:0.4rem 0.6rem;font-size:0.8rem;width:100%;">
                                 <option value="">Select Vacant Bed</option>
                                 <?php foreach ($bedOptions as $b): ?>
                                     <option value="<?= $b['bed_id'] ?>">Room <?= h($b['room_number']) ?> — Bed <?= h($b['bed_number']) ?></option>
