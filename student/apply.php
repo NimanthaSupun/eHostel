@@ -166,10 +166,6 @@ $active = 'apply';
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="academic_year">Academic Year *</label>
-                    <input type="text" id="academic_year" name="academic_year" class="input-luxury" required value="<?= h($_POST['academic_year'] ?? ($studentProfile['academic_year'] ?? '')) ?>" placeholder="e.g. 2nd Year">
-                </div>
-                <div class="form-group">
                     <label for="preferred_room_type">Preferred Accommodation Type *</label>
                     <select id="preferred_room_type" name="preferred_room_type" class="input-luxury" required>
                         <option value="single" <?= (($_POST['preferred_room_type'] ?? 'shared') === 'single') ? 'selected' : '' ?>>Single Room</option>
@@ -185,11 +181,37 @@ $active = 'apply';
             <div class="form-row">
                 <div class="form-group">
                     <label for="campus">Campus</label>
-                    <input type="text" id="campus" name="campus" class="input-luxury" value="<?= h($_POST['campus'] ?? ($studentProfile['campus'] ?? '')) ?>" placeholder="e.g. Colombo Campus">
+                    <input type="text" id="campus" name="campus" class="input-luxury" value="<?= h($_POST['campus'] ?? ($studentProfile['campus'] ?? 'University of Colombo')) ?>" placeholder="e.g. Colombo Campus">
                 </div>
                 <div class="form-group">
                     <label for="faculty">Faculty</label>
-                    <input type="text" id="faculty" name="faculty" class="input-luxury" value="<?= h($_POST['faculty'] ?? ($studentProfile['faculty'] ?? '')) ?>" placeholder="e.g. Faculty of Science">
+                    <select id="faculty" name="faculty" class="input-luxury">
+                        <?php
+                        $faculties = [
+                            'Faculty of Computing',
+                            'Faculty of Engineering',
+                            'Faculty of Science',
+                            'Faculty of Management Studies & Commerce',
+                            'Faculty of Arts',
+                            'Faculty of Medicine',
+                            'Faculty of Law',
+                            'Faculty of Education',
+                            'Faculty of Allied Health Sciences',
+                        ];
+                        $selFaculty = $_POST['faculty'] ?? ($studentProfile['faculty'] ?? '');
+                        ?>
+                        <option value="" <?= $selFaculty === '' ? 'selected' : '' ?>>Select Faculty</option>
+                        <?php foreach ($faculties as $f): ?>
+                            <option value="<?= h($f) ?>" <?= $selFaculty === $f ? 'selected' : '' ?>><?= h($f) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="academic_year">Academic Year *</label>
+                    <input type="text" id="academic_year" name="academic_year" class="input-luxury" required value="<?= h($_POST['academic_year'] ?? ($studentProfile['academic_year'] ?? '')) ?>" placeholder="e.g. 2nd Year">
                 </div>
             </div>
 

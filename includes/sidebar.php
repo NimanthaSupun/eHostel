@@ -31,7 +31,7 @@ $role = current_role();
             <a href="<?= $base ?>help.php" class="side-link <?= $active === 'help' ? 'active' : '' ?>">❓ Help Guide</a>
         <?php else: ?>
             <a href="<?= $base ?>student/dashboard.php" class="side-link <?= $active === 'dash' ? 'active' : '' ?>">🏠 Student Dashboard</a>
-            <a href="<?= $base ?>student/rooms.php" class="side-link <?= $active === 'st_rooms' ? 'active' : '' ?>">🏢 View Available Rooms</a>
+            <!-- <a href="<?= $base ?>student/rooms.php" class="side-link <?= $active === 'st_rooms' ? 'active' : '' ?>">🏢 View Available Rooms</a> -->
             <a href="<?= $base ?>student/apply.php" class="side-link <?= $active === 'apply' ? 'active' : '' ?>">📝 Apply for Hostel</a>
             <a href="<?= $base ?>student/profile.php" class="side-link <?= $active === 'profile' ? 'active' : '' ?>">👤 My Profile</a>
             <a href="<?= $base ?>student/announcements.php" class="side-link <?= $active === 'ann' ? 'active' : '' ?>">📢 Notices &amp; Updates</a>
