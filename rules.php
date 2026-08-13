@@ -159,7 +159,7 @@ $active = 'rules';
         </div>
     </div>
 
-    <div class="card rule-card" style="margin-bottom:2rem;">
+    <!-- <div class="card rule-card" style="margin-bottom:2rem;">
         <div class="rule-number">8</div>
         <div>
             <h3>Payments</h3>
@@ -169,10 +169,10 @@ $active = 'rules';
                 <li>Security deposits are refundable within 14 days of checkout, subject to a room condition inspection.</li>
             </ul>
         </div>
-    </div>
+    </div> -->
 
     <div class="card rule-card" style="margin-bottom:2rem;">
-        <div class="rule-number">9</div>
+        <div class="rule-number">8</div>
         <div>
             <h3>Maintenance &amp; Complaints</h3>
             <ul>

@@ -51,19 +51,19 @@ $active = 'dash';
 <div class="card-grid" style="margin-bottom:2rem;">
     <div class="stat-card">
         <div class="num"><?= $singleOccupied ?></div>
-        <div class="label">Single Rooms Occupied</div>
+        <div class="label">Single Rooms Occupied Beds</div>
     </div>
     <div class="stat-card">
         <div class="num" style="color:var(--success);"><?= $singleVacant ?></div>
-        <div class="label">Single Rooms Vacant</div>
+        <div class="label">Single Rooms Vacant Beds</div>
     </div>
     <div class="stat-card">
         <div class="num"><?= $doubleOccupied ?></div>
-        <div class="label">Double Rooms Occupied</div>
+        <div class="label">Double Rooms Occupied Beds</div>
     </div>
     <div class="stat-card">
         <div class="num" style="color:var(--success);"><?= $doubleVacant ?></div>
-        <div class="label">Double Rooms Vacant</div>
+        <div class="label">Double Rooms Vacant Beds</div>
     </div>
 </div>
 
