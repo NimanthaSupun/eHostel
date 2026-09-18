@@ -19,11 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nic_no = trim($_POST['nic_no'] ?? '');
     $address = trim($_POST['address'] ?? '');
     $academic_year = trim($_POST['academic_year'] ?? '');
-    $district = trim($_POST['district'] ?? '');
     $campus = trim($_POST['campus'] ?? '');
-    $faculty = trim($_POST['faculty'] ?? '');
-    $degree_program = trim($_POST['degree_program'] ?? '');
-    $emergency_contact = trim($_POST['emergency_contact'] ?? '');
     $gender = trim($_POST['gender'] ?? '');
     $dob = trim($_POST['date_of_birth'] ?? '');
     $new_password = trim($_POST['password'] ?? '');
@@ -40,11 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'nic_no' => $nic_no === '' ? ($user['nic_no'] ?? null) : $nic_no,
                 'address' => $address === '' ? ($user['address'] ?? null) : $address,
                 'academic_year' => $academic_year === '' ? ($user['academic_year'] ?? null) : $academic_year,
-                'district' => $district === '' ? ($user['district'] ?? null) : $district,
                 'campus' => $campus === '' ? ($user['campus'] ?? null) : $campus,
-                'faculty' => $faculty === '' ? ($user['faculty'] ?? null) : $faculty,
-                'degree_program' => $degree_program === '' ? ($user['degree_program'] ?? null) : $degree_program,
-                'emergency_contact' => $emergency_contact === '' ? ($user['emergency_contact'] ?? null) : $emergency_contact,
                 'gender' => $gender === '' ? null : $gender,
                 'date_of_birth' => $dob === '' ? null : $dob,
             ];
@@ -170,28 +162,8 @@ $active = 'profile';
         </div>
         <div class="form-row">
             <div class="form-group">
-                <label for="district">District</label>
-                <input type="text" id="district" name="district" class="input-luxury" value="<?= h($user['district'] ?? '') ?>">
-            </div>
-            <div class="form-group">
                 <label for="campus">Campus</label>
                 <input type="text" id="campus" name="campus" class="input-luxury" value="<?= h($user['campus'] ?? '') ?>">
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label for="faculty">Faculty</label>
-                <input type="text" id="faculty" name="faculty" class="input-luxury" value="<?= h($user['faculty'] ?? '') ?>">
-            </div>
-            <div class="form-group">
-                <label for="degree_program">Degree Program</label>
-                <input type="text" id="degree_program" name="degree_program" class="input-luxury" value="<?= h($user['degree_program'] ?? '') ?>">
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label for="emergency_contact">Emergency Contact</label>
-                <input type="tel" id="emergency_contact" name="emergency_contact" class="input-luxury" value="<?= h($user['emergency_contact'] ?? '') ?>">
             </div>
             <div class="form-group">
                 <label for="gender">Gender</label>
@@ -214,8 +186,8 @@ $active = 'profile';
             </div>
         </div>
         <div class="form-group">
-            <label for="address">Permanent Address</label>
-            <textarea id="address" name="address" class="input-luxury" rows="3"><?= h($user['address']) ?></textarea>
+            <label for="address">Permanent Address (with district)</label>
+            <textarea id="address" name="address" class="input-luxury" rows="3" placeholder="Enter your permanent address including district"><?= h($user['address'] ?? '') ?></textarea>
         </div>
         <button type="submit" class="btn btn-luxury btn-accent">Save Profile Changes</button>
     </form>

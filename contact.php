@@ -68,18 +68,6 @@ $active = 'contact';
 .contact-layout .card {
     background: var(--surface);
 }
-.map-embed {
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
-}
-.map-embed iframe {
-    width: 100%;
-    height: 460px;
-    border: 0;
-    display: block;
-}
 @media (max-width: 800px) {
     .contact-layout { grid-template-columns: 1fr; }
 }
@@ -101,8 +89,8 @@ $active = 'contact';
     </div>
 </div>
 
-<div style="max-width:1250px;margin:2.5rem auto 4rem;padding:0 2rem;display:grid;grid-template-columns:1fr 1.2fr;gap:2rem;">
-    <div>
+<div style="max-width:900px;margin:2.5rem auto 4rem;padding:0 2rem;display:flex;justify-content:center;">
+    <div style="width:100%;max-width:760px;">
         <div class="card" style="margin-bottom:1.5rem;">
             <h3 class="serif-heading" style="font-size:1.5rem;color:var(--primary-dark);">Hostel Warden Office</h3>
             <p style="color:var(--text-secondary);font-size:0.95rem;line-height:1.7;margin-top:0.75rem;">
@@ -120,10 +108,6 @@ $active = 'contact';
                 Campus Security Desk: <strong>+94 11 258 9900</strong>
             </p>
         </div>
-    </div>
-
-    <div class="map-embed">
-        <iframe loading="lazy" src="https://maps.google.com/maps?q=Colombo%203%2C%20Sri%20Lanka&t=&z=14&ie=UTF8&iwloc=&output=embed"></iframe>
     </div>
 </div>
 

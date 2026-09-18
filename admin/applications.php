@@ -54,7 +54,7 @@ if (isset($_GET['reject'])) {
     if (mysqli_stmt_execute($stmt)) { $success = 'Application status set to rejected.'; }
 }
 
-$apps = mysqli_query($conn, "SELECT ap.*, u.full_name, u.email, u.student_id, u.nic_no, u.address, u.academic_year, u.contact_no, u.distance_km
+$apps = mysqli_query($conn, "SELECT ap.*, u.full_name, u.email, u.student_id, u.address, u.contact_no
                               FROM applications ap JOIN users u ON ap.user_id = u.user_id
                               ORDER BY FIELD(ap.status,'pending','approved','rejected'), ap.application_id DESC");
 
@@ -99,7 +99,7 @@ $active = 'apps';
             <tr>
                 <th>Student Details</th>
                 <th>Student ID</th>
-                <th>Distance from Campus (km)</th>
+                <th>Address</th>
                 <th>Preferred Type</th>
                 <th>Applied Date</th>
                 <th>Status</th>
@@ -110,13 +110,10 @@ $active = 'apps';
         <?php if (mysqli_num_rows($apps) > 0): while ($a = mysqli_fetch_assoc($apps)): ?>
             <tr>
                 <td>
-                    <strong style="color:var(--primary-dark);"><?= h($a['full_name']) ?></strong><br>
-                    <span style="font-size:0.78rem;color:var(--text-muted);">NIC: <?= h($a['nic_no'] ?: '—') ?></span><br>
-                    <span style="font-size:0.78rem;color:var(--text-muted);">Year: <?= h($a['academic_year'] ?: '—') ?></span><br>
-                    <span style="font-size:0.78rem;color:var(--text-muted);">Address: <?= h($a['address'] ?: '—') ?></span>
+                    <strong style="color:var(--primary-dark);"><?= h($a['full_name']) ?></strong>
                 </td>
                 <td><?= h($a['student_id'] ?: 'Pending') ?></td>
-                <td><?= h($a['distance_km'] !== null && $a['distance_km'] !== '' ? $a['distance_km'] : '—') ?></td>
+                <td><?= h($a['address'] ?: '—') ?></td>
                 <td><?= h(ucfirst($a['preferred_room_type'])) ?></td>
                 <td><?= date('d M Y', strtotime($a['applied_date'])) ?></td>
                 <td>

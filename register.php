@@ -113,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php if ($error): ?><div class="alert alert-error" style="margin-bottom:1.5rem;"><?= h($error) ?></div><?php endif; ?>
             <?php if ($success): ?>
                 <div class="alert alert-success" style="margin-bottom:1.5rem;">
-                    <?= h($success) ?> <a href="login.php" style="font-weight:700;color:inherit;margin-left:0.5rem;">Sign In Now &rarr;</a>
+                    <?= h($success) ?> <a href="login.php" style="font-weight:700;color:inherit;margin-left:0.5rem;">Login Now &rarr;</a>
                 </div>
             <?php endif; ?>
 

@@ -8,7 +8,7 @@ $error = '';
 $success = '';
 
 function load_student_detail(mysqli $conn, int $userId): ?array {
-    $stmt = mysqli_prepare($conn, "SELECT u.*, a.application_id, a.preferred_room_type, a.nic_no AS app_nic, a.address AS app_address, a.academic_year AS app_year, a.status AS app_status, a.applied_date
+    $stmt = mysqli_prepare($conn, "SELECT u.*, a.application_id, a.preferred_room_type, a.status AS app_status, a.applied_date
                                    FROM users u
                                    LEFT JOIN applications a ON a.user_id = u.user_id
                                        AND a.application_id = (SELECT MAX(application_id) FROM applications WHERE user_id = u.user_id)
@@ -42,83 +42,49 @@ if (!$student) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_student'])) {
     $fullName = trim($_POST['full_name'] ?? '');
-    $username = trim($_POST['username'] ?? '');
-    $email = trim($_POST['email'] ?? '');
     $contactNo = trim($_POST['contact_no'] ?? '');
-    $emergencyContact = trim($_POST['emergency_contact'] ?? '');
-    $district = trim($_POST['district'] ?? '');
     $nicNo = trim($_POST['nic_no'] ?? '');
     $academicYear = trim($_POST['academic_year'] ?? '');
     $campus = trim($_POST['campus'] ?? '');
-    $faculty = trim($_POST['faculty'] ?? '');
     $address = trim($_POST['address'] ?? '');
-    $degreeProgram = trim($_POST['degree_program'] ?? '');
     $gender = trim($_POST['gender'] ?? '');
     $dateOfBirth = trim($_POST['date_of_birth'] ?? '');
-    $distanceKm = trim($_POST['distance_km'] ?? '');
 
-    if ($fullName === '' || $username === '') {
-        $error = 'Full name and username are required.';
+    if ($fullName === '') {
+        $error = 'Full name is required.';
     } elseif ($nicNo !== '' && !preg_match('/^(\d{9}[VvXx]|\d{12})$/', $nicNo)) {
         $error = 'Please enter a valid NIC number.';
-    } elseif ($distanceKm !== '' && !is_numeric($distanceKm)) {
-        $error = 'Distance from campus must be a number.';
     } elseif ($dateOfBirth !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateOfBirth)) {
         $error = 'Date of birth must be a valid date.';
     } else {
-        $check = mysqli_prepare($conn, "SELECT user_id FROM users WHERE user_id <> ? AND (username = ? OR (nic_no IS NOT NULL AND nic_no <> '' AND nic_no = ?))");
-        mysqli_stmt_bind_param($check, 'iss', $userId, $username, $nicNo);
-        mysqli_stmt_execute($check);
-        mysqli_stmt_store_result($check);
+        mysqli_begin_transaction($conn);
+        try {
+            $updateStudent = mysqli_prepare($conn, "UPDATE users SET full_name = ?, contact_no = ?, nic_no = ?, academic_year = ?, campus = ?, address = ?, gender = ?, date_of_birth = ? WHERE user_id = ? AND role = 'student'");
+            $dateValue = $dateOfBirth === '' ? null : $dateOfBirth;
+            mysqli_stmt_bind_param(
+                $updateStudent,
+                'sssssssi',
+                $fullName,
+                $contactNo,
+                $nicNo,
+                $academicYear,
+                $campus,
+                $address,
+                $gender,
+                $dateValue,
+                $userId
+            );
 
-        if (mysqli_stmt_num_rows($check) > 0) {
-            $error = 'That username or NIC number is already in use.';
-        } else {
-            mysqli_begin_transaction($conn);
-            try {
-                $updateStudent = mysqli_prepare($conn, "UPDATE users SET full_name = ?, username = ?, email = ?, contact_no = ?, emergency_contact = ?, district = ?, nic_no = ?, academic_year = ?, campus = ?, faculty = ?, address = ?, degree_program = ?, gender = ?, date_of_birth = ?, distance_km = ? WHERE user_id = ? AND role = 'student'");
-                $distanceValue = $distanceKm === '' ? null : (float) $distanceKm;
-                $dateValue = $dateOfBirth === '' ? null : $dateOfBirth;
-                mysqli_stmt_bind_param(
-                    $updateStudent,
-                    'ssssssssssssssdi',
-                    $fullName,
-                    $username,
-                    $email,
-                    $contactNo,
-                    $emergencyContact,
-                    $district,
-                    $nicNo,
-                    $academicYear,
-                    $campus,
-                    $faculty,
-                    $address,
-                    $degreeProgram,
-                    $gender,
-                    $dateValue,
-                    $distanceValue,
-                    $userId
-                );
-
-                if (!mysqli_stmt_execute($updateStudent)) {
-                    throw new Exception('Could not update the student profile.');
-                }
-
-                if (!empty($student['application_id'])) {
-                    $updateApplication = mysqli_prepare($conn, "UPDATE applications SET nic_no = ?, address = ?, academic_year = ? WHERE application_id = ?");
-                    mysqli_stmt_bind_param($updateApplication, 'sssi', $nicNo, $address, $academicYear, $student['application_id']);
-                    if (!mysqli_stmt_execute($updateApplication)) {
-                        throw new Exception('Could not update the latest application snapshot.');
-                    }
-                }
-
-                mysqli_commit($conn);
-                $success = 'Student information updated successfully.';
-                $student = load_student_detail($conn, $userId);
-            } catch (Exception $e) {
-                mysqli_rollback($conn);
-                $error = $e->getMessage();
+            if (!mysqli_stmt_execute($updateStudent)) {
+                throw new Exception('Could not update the student profile.');
             }
+
+            mysqli_commit($conn);
+            $success = 'Student information updated successfully.';
+            $student = load_student_detail($conn, $userId);
+        } catch (Exception $e) {
+            mysqli_rollback($conn);
+            $error = $e->getMessage();
         }
     }
 }
@@ -183,8 +149,8 @@ $active = 'students';
 
     <div class="form-row">
         <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" id="username" name="username" class="input-luxury" value="<?= h(field_value($student, 'username', $student['username'])) ?>" required>
+            <label>Username</label>
+            <input type="text" class="input-luxury" value="<?= h($student['username']) ?>" disabled>
         </div>
         <div class="form-group">
             <label>Role</label>
@@ -194,23 +160,12 @@ $active = 'students';
 
     <div class="form-row">
         <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" class="input-luxury" value="<?= h(field_value($student, 'email', $student['email'])) ?>">
+            <label>Email</label>
+            <input type="email" class="input-luxury" value="<?= h($student['email']) ?>" disabled>
         </div>
         <div class="form-group">
             <label for="contact_no">Contact No.</label>
             <input type="text" id="contact_no" name="contact_no" class="input-luxury" value="<?= h(field_value($student, 'contact_no', $student['contact_no'])) ?>">
-        </div>
-    </div>
-
-    <div class="form-row">
-        <div class="form-group">
-            <label for="emergency_contact">Emergency Contact</label>
-            <input type="text" id="emergency_contact" name="emergency_contact" class="input-luxury" value="<?= h(field_value($student, 'emergency_contact', $student['emergency_contact'])) ?>">
-        </div>
-        <div class="form-group">
-            <label for="district">District</label>
-            <input type="text" id="district" name="district" class="input-luxury" value="<?= h(field_value($student, 'district', $student['district'])) ?>">
         </div>
     </div>
 
@@ -231,17 +186,6 @@ $active = 'students';
             <input type="text" id="campus" name="campus" class="input-luxury" value="<?= h(field_value($student, 'campus', $student['campus'])) ?>">
         </div>
         <div class="form-group">
-            <label for="faculty">Faculty</label>
-            <input type="text" id="faculty" name="faculty" class="input-luxury" value="<?= h(field_value($student, 'faculty', $student['faculty'])) ?>">
-        </div>
-    </div>
-
-    <div class="form-row">
-        <div class="form-group">
-            <label for="degree_program">Degree Program</label>
-            <input type="text" id="degree_program" name="degree_program" class="input-luxury" value="<?= h(field_value($student, 'degree_program', $student['degree_program'])) ?>">
-        </div>
-        <div class="form-group">
             <label for="gender">Gender</label>
             <select id="gender" name="gender" class="input-luxury">
                 <?php $genderValue = field_value($student, 'gender', (string) ($student['gender'] ?? '')); ?>
@@ -259,19 +203,13 @@ $active = 'students';
             <input type="date" id="date_of_birth" name="date_of_birth" class="input-luxury" value="<?= h(field_value($student, 'date_of_birth', (string) ($student['date_of_birth'] ?? ''))) ?>">
         </div>
         <div class="form-group">
-            <label for="distance_km">Distance from Campus (km)</label>
-            <input type="number" step="0.1" min="0" id="distance_km" name="distance_km" class="input-luxury" value="<?= h(field_value($student, 'distance_km', isset($student['distance_km']) ? (string) $student['distance_km'] : '')) ?>">
-        </div>
-    </div>
-    <div class="form-row">
-        <div class="form-group">
-            <label for="address">Address</label>
-            <textarea id="address" name="address" class="input-luxury" rows="3"><?= h(field_value($student, 'address', $student['app_address'] ?: (string) ($student['address'] ?? ''))) ?></textarea>
-        </div>
-        <div class="form-group">
             <label>Allocated Bed</label>
             <input type="text" class="input-luxury" value="<?= $allocation ? h($allocation['bed_number']) : 'Pending' ?>" disabled>
         </div>
+    </div>
+    <div class="form-group">
+        <label for="address">Permanent Address (with district)</label>
+        <textarea id="address" name="address" class="input-luxury" rows="3"><?= h(field_value($student, 'address', (string) ($student['address'] ?? ''))) ?></textarea>
     </div>
 
     <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;margin-top:1.25rem;">
@@ -305,7 +243,7 @@ $active = 'students';
 
     <div class="form-group">
         <label>Latest Application Address</label>
-        <textarea class="input-luxury" rows="3" disabled><?= h($student['app_address'] ?: '—') ?></textarea>
+        <textarea class="input-luxury" rows="3" disabled><?= h($student['address'] ?: '—') ?></textarea>
     </div>
 </div>
 

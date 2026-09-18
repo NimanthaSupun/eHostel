@@ -7,7 +7,7 @@ $uid = $_SESSION['user_id'];
 $error = '';
 $success = '';
 
-$userStmt = mysqli_prepare($conn, "SELECT full_name, nic_no, contact_no, emergency_contact, address, district, academic_year, campus, faculty, degree_program, distance_km, gender, date_of_birth FROM users WHERE user_id = ?");
+$userStmt = mysqli_prepare($conn, "SELECT full_name, nic_no, contact_no, address, academic_year, campus, gender, date_of_birth FROM users WHERE user_id = ?");
 mysqli_stmt_bind_param($userStmt, "i", $uid);
 mysqli_stmt_execute($userStmt);
 $studentProfile = mysqli_stmt_get_result($userStmt)->fetch_assoc() ?: [];
@@ -24,33 +24,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canApply) {
     $dbRoomType = $preferredRoomType === 'single' ? 'single' : 'shared';
     $nicNo = trim($_POST['nic_no'] ?? '');
     $contactNo = trim($_POST['contact_no'] ?? '');
-    $emergencyContact = trim($_POST['emergency_contact'] ?? '');
     $address = trim($_POST['address'] ?? '');
     $academicYear = trim($_POST['academic_year'] ?? '');
-    $district = trim($_POST['district'] ?? '');
     $campus = trim($_POST['campus'] ?? '');
-    $faculty = trim($_POST['faculty'] ?? '');
-    $degreeProgram = trim($_POST['degree_program'] ?? '');
     $gender = trim($_POST['gender'] ?? '');
     $dateOfBirth = trim($_POST['date_of_birth'] ?? '');
-    $distanceKmRaw = trim($_POST['distance_km'] ?? '');
-    $distanceKm = $distanceKmRaw === '' ? null : (float) $distanceKmRaw;
     $gender = $gender === '' ? null : $gender;
     $dateOfBirth = $dateOfBirth === '' ? null : $dateOfBirth;
 
     if ($nicNo === '' || $contactNo === '' || $address === '' || $academicYear === '') {
-        $error = 'Please complete NIC, contact number, address, and academic year.';
-    } elseif ($distanceKm !== null && $distanceKm < 0) {
-        $error = 'Distance from campus must be a positive value.';
+        $error = 'Please complete NIC, contact number, permanent address, and academic year.';
     } else {
         mysqli_begin_transaction($conn);
         try {
-            $updateUserStmt = mysqli_prepare($conn, "UPDATE users SET nic_no=?, contact_no=?, emergency_contact=?, address=?, academic_year=?, district=?, campus=?, faculty=?, degree_program=?, distance_km=?, gender=?, date_of_birth=? WHERE user_id=?");
-            mysqli_stmt_bind_param($updateUserStmt, "sssssssssdssi", $nicNo, $contactNo, $emergencyContact, $address, $academicYear, $district, $campus, $faculty, $degreeProgram, $distanceKm, $gender, $dateOfBirth, $uid);
+            $updateUserStmt = mysqli_prepare($conn, "UPDATE users SET nic_no=?, contact_no=?, address=?, academic_year=?, campus=?, gender=?, date_of_birth=? WHERE user_id=?");
+            mysqli_stmt_bind_param($updateUserStmt, "sssssssi", $nicNo, $contactNo, $address, $academicYear, $campus, $gender, $dateOfBirth, $uid);
             mysqli_stmt_execute($updateUserStmt);
 
-            $ins = mysqli_prepare($conn, "INSERT INTO applications (user_id, preferred_room_type, nic_no, address, academic_year, applied_date, status) VALUES (?, ?, ?, ?, ?, CURDATE(), 'pending')");
-            mysqli_stmt_bind_param($ins, "issss", $uid, $dbRoomType, $nicNo, $address, $academicYear);
+            $ins = mysqli_prepare($conn, "INSERT INTO applications (user_id, preferred_room_type, applied_date, status) VALUES (?, ?, CURDATE(), 'pending')");
+            mysqli_stmt_bind_param($ins, "is", $uid, $dbRoomType);
             mysqli_stmt_execute($ins);
 
             mysqli_commit($conn);
@@ -127,13 +119,6 @@ $active = 'apply';
                     <input type="text" id="contact_no" name="contact_no" class="input-luxury" required value="<?= h($_POST['contact_no'] ?? ($studentProfile['contact_no'] ?? '')) ?>" placeholder="e.g. 0771234567">
                 </div>
                 <div class="form-group">
-                    <label for="emergency_contact">Emergency Contact</label>
-                    <input type="text" id="emergency_contact" name="emergency_contact" class="input-luxury" value="<?= h($_POST['emergency_contact'] ?? ($studentProfile['emergency_contact'] ?? '')) ?>" placeholder="Parent/Guardian contact">
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
                     <label for="gender">Gender</label>
                     <select id="gender" name="gender" class="input-luxury">
                         <option value="" <?= (($_POST['gender'] ?? ($studentProfile['gender'] ?? '')) === '') ? 'selected' : '' ?>>Select Gender</option>
@@ -142,29 +127,13 @@ $active = 'apply';
                         <option value="Other" <?= (($_POST['gender'] ?? ($studentProfile['gender'] ?? '')) === 'Other') ? 'selected' : '' ?>>Other</option>
                     </select>
                 </div>
+            </div>
+
+            <div class="form-row">
                 <div class="form-group">
                     <label for="date_of_birth">Date of Birth</label>
                     <input type="date" id="date_of_birth" name="date_of_birth" class="input-luxury" value="<?= h($_POST['date_of_birth'] ?? ($studentProfile['date_of_birth'] ?? '')) ?>">
                 </div>
-            </div>
-
-            <div class="form-group">
-                <label for="address">Permanent Address *</label>
-                <textarea id="address" name="address" class="input-luxury" rows="3" required placeholder="Enter your residential address"><?= h($_POST['address'] ?? ($studentProfile['address'] ?? '')) ?></textarea>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="district">District</label>
-                    <input type="text" id="district" name="district" class="input-luxury" value="<?= h($_POST['district'] ?? ($studentProfile['district'] ?? '')) ?>" placeholder="e.g. Colombo">
-                </div>
-                <div class="form-group">
-                    <label for="distance_km">Distance from Campus (km)</label>
-                    <input type="number" id="distance_km" name="distance_km" min="0" step="0.1" class="input-luxury" value="<?= h($_POST['distance_km'] ?? ($studentProfile['distance_km'] ?? '')) ?>" placeholder="e.g. 42.5">
-                </div>
-            </div>
-
-            <div class="form-row">
                 <div class="form-group">
                     <label for="preferred_room_type">Preferred Accommodation Type *</label>
                     <select id="preferred_room_type" name="preferred_room_type" class="input-luxury" required>
@@ -172,6 +141,11 @@ $active = 'apply';
                         <option value="shared" <?= (($_POST['preferred_room_type'] ?? 'shared') === 'shared') ? 'selected' : '' ?>>Double Room</option>
                     </select>
                 </div>
+            </div>
+
+            <div class="form-group">
+                <label for="address">Permanent Address (with district) *</label>
+                <textarea id="address" name="address" class="input-luxury" rows="3" required placeholder="Enter your permanent address including district"><?= h($_POST['address'] ?? ($studentProfile['address'] ?? '')) ?></textarea>
             </div>
 
             <div style="border-bottom:1px solid var(--border);padding:1rem 0 0.75rem;margin:0.75rem 0 1.5rem;">
@@ -184,40 +158,9 @@ $active = 'apply';
                     <input type="text" id="campus" name="campus" class="input-luxury" value="<?= h($_POST['campus'] ?? ($studentProfile['campus'] ?? 'University of Colombo')) ?>" placeholder="e.g. Colombo Campus">
                 </div>
                 <div class="form-group">
-                    <label for="faculty">Faculty</label>
-                    <select id="faculty" name="faculty" class="input-luxury">
-                        <?php
-                        $faculties = [
-                            'Faculty of Computing',
-                            'Faculty of Engineering',
-                            'Faculty of Science',
-                            'Faculty of Management Studies & Commerce',
-                            'Faculty of Arts',
-                            'Faculty of Medicine',
-                            'Faculty of Law',
-                            'Faculty of Education',
-                            'Faculty of Allied Health Sciences',
-                        ];
-                        $selFaculty = $_POST['faculty'] ?? ($studentProfile['faculty'] ?? '');
-                        ?>
-                        <option value="" <?= $selFaculty === '' ? 'selected' : '' ?>>Select Faculty</option>
-                        <?php foreach ($faculties as $f): ?>
-                            <option value="<?= h($f) ?>" <?= $selFaculty === $f ? 'selected' : '' ?>><?= h($f) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
                     <label for="academic_year">Academic Year *</label>
                     <input type="text" id="academic_year" name="academic_year" class="input-luxury" required value="<?= h($_POST['academic_year'] ?? ($studentProfile['academic_year'] ?? '')) ?>" placeholder="e.g. 2nd Year">
                 </div>
-            </div>
-
-            <div class="form-group">
-                <label for="degree_program">Degree Program</label>
-                <input type="text" id="degree_program" name="degree_program" class="input-luxury" value="<?= h($_POST['degree_program'] ?? ($studentProfile['degree_program'] ?? '')) ?>" placeholder="e.g. BSc in Computer Science">
             </div>
 
             <div style="margin-top:2.25rem;">
