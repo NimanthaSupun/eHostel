@@ -26,7 +26,6 @@ $role = current_role();
             <a href="<?= $base ?>admin/manage_students.php" class="side-link <?= $active === 'students' ? 'active' : '' ?>">🧑‍🎓 Student Records</a>
             <a href="<?= $base ?>admin/applications.php" class="side-link <?= $active === 'apps' ? 'active' : '' ?>">📄 Review Applications</a>
             <a href="<?= $base ?>admin/announcements.php" class="side-link <?= $active === 'ann' ? 'active' : '' ?>">📢 Announcements</a>
-            <a href="<?= $base ?>admin/reports.php" class="side-link <?= $active === 'reports' ? 'active' : '' ?>">📊 Summary Reports</a>
             <a href="<?= $base ?>functionalities.php" class="side-link <?= $active === 'func' ? 'active' : '' ?>">⚙️ Functionalities</a>
             <a href="<?= $base ?>help.php" class="side-link <?= $active === 'help' ? 'active' : '' ?>">❓ Help Guide</a>
         <?php else: ?>
