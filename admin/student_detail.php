@@ -1,4 +1,18 @@
 <?php
+/**
+ * ============================================================
+ *  STUDENT DETAIL VIEW / EDIT — eHostel Admin
+ * ============================================================
+ *
+ *  CRUD Operations in this file:
+ *  ─────────────────────────────
+ *  [READ]    Select a single student record with latest application (JOIN)
+ *  [READ]    Select the student's latest bed allocation (JOIN beds, rooms)
+ *  [UPDATE]  Update student profile fields (full_name, contact_no, etc.)
+ *
+ *  Tables involved: users, applications, allocations, beds, rooms
+ * ============================================================
+ */
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../config/db.php';
 require_admin();
@@ -7,6 +21,21 @@ $userId = (int) ($_GET['id'] ?? 0);
 $error = '';
 $success = '';
 
+
+/* ══════════════════════════════════════════════════════════════
+ *  [READ] — Load a single student's full detail
+ *  ────────────────────────────────────────────────────────────
+ *  SQL: SELECT u.*, a.application_id, a.preferred_room_type,
+ *              a.status AS app_status, a.applied_date
+ *       FROM users u
+ *       LEFT JOIN applications a ON a.user_id = u.user_id
+ *           AND a.application_id = (SELECT MAX(application_id)
+ *                                   FROM applications
+ *                                   WHERE user_id = u.user_id)
+ *       WHERE u.user_id = ?
+ *
+ *  This uses a correlated subquery to get only the LATEST application.
+ * ══════════════════════════════════════════════════════════════ */
 function load_student_detail(mysqli $conn, int $userId): ?array {
     $stmt = mysqli_prepare($conn, "SELECT u.*, a.application_id, a.preferred_room_type, a.status AS app_status, a.applied_date
                                    FROM users u
@@ -40,6 +69,19 @@ if (!$student) {
     exit;
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+ *  [UPDATE] — Update student profile information
+ *  ────────────────────────────────────────────────────────────
+ *  SQL: UPDATE users
+ *       SET full_name = ?, contact_no = ?, nic_no = ?,
+ *           academic_year = ?, campus = ?, address = ?,
+ *           gender = ?, date_of_birth = ?
+ *       WHERE user_id = ? AND role = 'student'
+ *
+ *  Uses a TRANSACTION for safe update.
+ *  After success, re-loads the student data via [READ] above.
+ * ══════════════════════════════════════════════════════════════ */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_student'])) {
     $fullName = trim($_POST['full_name'] ?? '');
     $contactNo = trim($_POST['contact_no'] ?? '');
@@ -59,6 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_student'])) {
     } else {
         mysqli_begin_transaction($conn);
         try {
+            /* [UPDATE] Update the student record in the users table */
             $updateStudent = mysqli_prepare($conn, "UPDATE users SET full_name = ?, contact_no = ?, nic_no = ?, academic_year = ?, campus = ?, address = ?, gender = ?, date_of_birth = ? WHERE user_id = ? AND role = 'student'");
             $dateValue = $dateOfBirth === '' ? null : $dateOfBirth;
             mysqli_stmt_bind_param(
@@ -81,6 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_student'])) {
 
             mysqli_commit($conn);
             $success = 'Student information updated successfully.';
+
+            /* [READ] Re-load student data after update */
             $student = load_student_detail($conn, $userId);
         } catch (Exception $e) {
             mysqli_rollback($conn);
@@ -89,7 +134,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_student'])) {
     }
 }
 
-// Latest allocation (if any)
+
+/* ══════════════════════════════════════════════════════════════
+ *  [READ] — Retrieve the student's latest bed/room allocation
+ *  ────────────────────────────────────────────────────────────
+ *  SQL: SELECT al.allocation_date, b.bed_number,
+ *              r.room_number, r.room_type
+ *       FROM allocations al
+ *       JOIN beds b ON al.bed_id = b.bed_id
+ *       JOIN rooms r ON b.room_id = r.room_id
+ *       WHERE al.user_id = ?
+ *       ORDER BY al.allocation_id DESC LIMIT 1
+ * ══════════════════════════════════════════════════════════════ */
 $allocation = null;
 $allocStmt = mysqli_prepare($conn, "SELECT al.allocation_date, b.bed_number, r.room_number, r.room_type FROM allocations al JOIN beds b ON al.bed_id = b.bed_id JOIN rooms r ON b.room_id = r.room_id WHERE al.user_id = ? ORDER BY al.allocation_id DESC LIMIT 1");
 mysqli_stmt_bind_param($allocStmt, 'i', $userId);
@@ -126,6 +182,7 @@ $active = 'students';
 <?php if ($error): ?><div class="alert alert-error"><?= h($error) ?></div><?php endif; ?>
 <?php if ($success): ?><div class="alert alert-success"><?= h($success) ?></div><?php endif; ?>
 
+<!-- [UPDATE] Form — submits to the UPDATE operation above -->
 <form method="POST" action="student_detail.php?id=<?= $userId ?>" class="card" style="max-width:900px;">
     <input type="hidden" name="update_student" value="1">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
@@ -204,6 +261,7 @@ $active = 'students';
         </div>
         <div class="form-group">
             <label>Allocated Bed</label>
+            <!-- [READ] Displays result from the allocation SELECT query above -->
             <input type="text" class="input-luxury" value="<?= $allocation ? h($allocation['bed_number']) : 'Pending' ?>" disabled>
         </div>
     </div>
@@ -213,11 +271,13 @@ $active = 'students';
     </div>
 
     <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;margin-top:1.25rem;">
+        <!-- [UPDATE] Submit button triggers the UPDATE query -->
         <button type="submit" class="btn btn-luxury btn-accent">Save Changes</button>
         <a href="manage_students.php" class="btn btn-luxury btn-outline">Cancel</a>
     </div>
 </form>
 
+<!-- [READ] Display application and allocation info (read-only) -->
 <div class="card" style="max-width:900px;margin-top:1.5rem;">
     <div class="form-row">
         <div class="form-group">
@@ -250,7 +310,3 @@ $active = 'students';
 <?php include __DIR__ . '/../includes/sidebar_close.php'; ?>
 </body>
 </html>
-
-
-
-    

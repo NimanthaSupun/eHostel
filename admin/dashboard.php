@@ -1,8 +1,25 @@
 <?php
+/**
+ * ============================================================
+ *  ADMIN DASHBOARD — eHostel
+ * ============================================================
+ *
+ *  CRUD Operations in this file:
+ *  ─────────────────────────────
+ *  [READ]  Select 5 most recent applications (JOIN with users)
+ *
+ *  Tables involved: applications, users
+ * ============================================================
+ */
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../config/db.php';
 require_admin();
 
+/* ──────────────────────────────────────────────────────────────
+ *  [READ] — Retrieve the 5 most recent hostel applications
+ *  SQL: SELECT ... FROM applications JOIN users ...
+ *       ORDER BY application_id DESC LIMIT 5
+ * ────────────────────────────────────────────────────────────── */
 $recentApps = mysqli_query($conn, "SELECT ap.application_id, u.full_name, ap.preferred_room_type, ap.applied_date, ap.status
                                     FROM applications ap JOIN users u ON ap.user_id = u.user_id
                                     ORDER BY ap.application_id DESC LIMIT 5");
@@ -27,6 +44,7 @@ $active = 'dash';
         <a href="applications.php" style="font-size:0.82rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;">Review All Applications &rarr;</a>
     </div>
 
+    <!-- [READ] Display results from the SELECT query above -->
     <?php if (mysqli_num_rows($recentApps) > 0): ?>
     <table>
         <thead>

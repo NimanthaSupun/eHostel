@@ -1,4 +1,18 @@
 <?php
+/**
+ * ============================================================
+ *  ANNOUNCEMENTS — eHostel Admin
+ * ============================================================
+ *
+ *  CRUD Operations in this file:
+ *  ─────────────────────────────
+ *  [CREATE]  Insert a new announcement
+ *  [READ]    Select all announcements ordered by date
+ *  [DELETE]  Delete an announcement by ID
+ *
+ *  Tables involved: announcements
+ * ============================================================
+ */
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../config/db.php';
 require_admin();
@@ -6,6 +20,18 @@ require_admin();
 $error = '';
 $success = '';
 
+
+/* ══════════════════════════════════════════════════════════════
+ *  [CREATE] — Publish a new announcement
+ *  ────────────────────────────────────────────────────────────
+ *  SQL: INSERT INTO announcements (title, content, posted_by)
+ *       VALUES (?, ?, ?)
+ *
+ *  Uses prepared statement with 3 bound parameters:
+ *    - title (string)
+ *    - content (string)
+ *    - posted_by (integer — current admin's user_id)
+ * ══════════════════════════════════════════════════════════════ */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ann'])) {
     $title = trim($_POST['title']);
     $content = trim($_POST['content']);
@@ -19,6 +45,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_ann'])) {
     }
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+ *  [DELETE] — Remove an announcement
+ *  ────────────────────────────────────────────────────────────
+ *  SQL: DELETE FROM announcements
+ *       WHERE announcement_id = ?
+ *
+ *  Uses prepared statement with bound integer parameter.
+ * ══════════════════════════════════════════════════════════════ */
 if (isset($_GET['delete'])) {
     $id = (int) $_GET['delete'];
     $stmt = mysqli_prepare($conn, "DELETE FROM announcements WHERE announcement_id = ?");
@@ -26,6 +61,15 @@ if (isset($_GET['delete'])) {
     if (mysqli_stmt_execute($stmt)) { $success = 'Announcement removed.'; }
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+ *  [READ] — Retrieve all announcements
+ *  ────────────────────────────────────────────────────────────
+ *  SQL: SELECT * FROM announcements
+ *       ORDER BY posted_date DESC
+ *
+ *  Fetches all announcements, newest first.
+ * ══════════════════════════════════════════════════════════════ */
 $anns = mysqli_query($conn, "SELECT * FROM announcements ORDER BY posted_date DESC");
 
 $base = '../';
@@ -53,6 +97,7 @@ $active = 'ann';
 <?php if ($error): ?><div class="alert alert-error"><?= h($error) ?></div><?php endif; ?>
 <?php if ($success): ?><div class="alert alert-success"><?= h($success) ?></div><?php endif; ?>
 
+<!-- [CREATE] Form — submits to the INSERT query above -->
 <div class="card" style="max-width:720px;">
     <h3 class="serif-heading" style="font-size:1.5rem;margin-bottom:1.25rem;">New Announcement</h3>
     <form method="POST" action="announcements.php">
@@ -68,6 +113,7 @@ $active = 'ann';
     </form>
 </div>
 
+<!-- [READ] Display all announcements from the SELECT query -->
 <div class="card" style="max-width:900px;">
     <h3 class="serif-heading" style="font-size:1.5rem;margin-bottom:1.5rem;">Published Announcements</h3>
     <?php if (mysqli_num_rows($anns) > 0): while ($a = mysqli_fetch_assoc($anns)): ?>
@@ -77,6 +123,7 @@ $active = 'ann';
                 <p style="margin:0 0 0.5rem;color:var(--text-secondary);font-size:0.92rem;line-height:1.6;"><?= h($a['content']) ?></p>
                 <span style="font-size:0.75rem;color:var(--text-muted);"><?= date('d M Y, h:i A', strtotime($a['posted_date'])) ?></span>
             </div>
+            <!-- [DELETE] Link — triggers the DELETE query above via ?delete=ID -->
             <a class="btn btn-sm btn-danger" style="flex-shrink:0;" href="announcements.php?delete=<?= $a['announcement_id'] ?>" onclick="return confirm('Remove this announcement?')">Remove Notice</a>
         </div>
     <?php endwhile; else: ?>

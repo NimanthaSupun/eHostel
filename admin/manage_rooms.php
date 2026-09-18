@@ -1,4 +1,18 @@
 <?php
+/**
+ * ============================================================
+ *  MANAGE ROOMS & BEDS — eHostel Admin
+ * ============================================================
+ *
+ *  CRUD Operations in this file:
+ *  ─────────────────────────────
+ *  [READ]  Select all rooms with occupancy counts (subqueries)
+ *  [READ]  Search rooms by floor, room number, or bed number
+ *  [READ]  Detailed room/bed search with occupant info (JOIN)
+ *
+ *  Tables involved: rooms, beds, allocations, users
+ * ============================================================
+ */
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../config/db.php';
 require_admin();
@@ -49,6 +63,26 @@ if ($search !== '') {
     }
 }
 
+
+/* ══════════════════════════════════════════════════════════════
+ *  [READ] — Retrieve all rooms with bed occupancy counts
+ *  ────────────────────────────────────────────────────────────
+ *  SQL: SELECT r.room_id, r.room_number, r.floor, r.room_type,
+ *              r.capacity,
+ *              (SELECT COUNT(*) FROM beds b
+ *               WHERE b.room_id = r.room_id) AS total_beds,
+ *              (SELECT COUNT(*) FROM beds b
+ *               WHERE b.room_id = r.room_id
+ *                 AND b.status='occupied') AS occupied_beds,
+ *              (SELECT COUNT(*) FROM beds b
+ *               WHERE b.room_id = r.room_id
+ *                 AND b.status='vacant') AS vacant_beds
+ *       FROM rooms r
+ *       WHERE (r.room_number LIKE 'F1/%' OR r.room_number LIKE 'F2/%')
+ *       ORDER BY r.floor, r.room_number
+ *
+ *  Uses correlated subqueries to compute occupancy per room.
+ * ══════════════════════════════════════════════════════════════ */
 $rooms = mysqli_query($conn, "SELECT r.room_id, r.room_number, r.floor, r.room_type, r.capacity,
                                 (SELECT COUNT(*) FROM beds b WHERE b.room_id = r.room_id) AS total_beds,
                                 (SELECT COUNT(*) FROM beds b WHERE b.room_id = r.room_id AND b.status='occupied') AS occupied_beds,
@@ -57,6 +91,23 @@ $rooms = mysqli_query($conn, "SELECT r.room_id, r.room_number, r.floor, r.room_t
                                WHERE (r.room_number LIKE 'F1/%' OR r.room_number LIKE 'F2/%')" . $roomFilter . "
                                ORDER BY r.floor, r.room_number");
 
+
+/* ══════════════════════════════════════════════════════════════
+ *  [READ] — Detailed bed/occupant search (only when searching)
+ *  ────────────────────────────────────────────────────────────
+ *  SQL: SELECT r.room_number, r.floor, r.room_type, r.capacity,
+ *              b.bed_id, b.bed_number, b.status AS bed_status,
+ *              u.user_id, u.full_name, u.student_id, u.nic_no,
+ *              u.email, u.contact_no, u.address, u.academic_year
+ *       FROM rooms r
+ *       JOIN beds b ON b.room_id = r.room_id
+ *       LEFT JOIN allocations a ON a.bed_id = b.bed_id
+ *       LEFT JOIN users u ON u.user_id = a.user_id
+ *       WHERE ...
+ *       ORDER BY r.floor, r.room_number, b.bed_number
+ *
+ *  Uses LEFT JOIN to show vacant beds (no allocated user).
+ * ══════════════════════════════════════════════════════════════ */
 $searchDetails = [];
 if ($search !== '') {
     $detailQuery = mysqli_query($conn, "SELECT r.room_number, r.floor, r.room_type, r.capacity,
@@ -104,6 +155,7 @@ $active = 'rooms';
 <?php if ($success): ?><div class="alert alert-success"><?= h($success) ?></div><?php endif; ?>
 
 <div class="card">
+    <!-- [READ] Search form — triggers the room/bed SELECT queries above -->
     <form method="GET" action="manage_rooms.php" style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;margin-bottom:1.5rem;">
         <input type="text" name="q" class="input-luxury" placeholder="Search by floor (F1), room (F1/01), or bed (F1/01/A1)" value="<?= h($search) ?>" style="max-width:420px;">
         <button type="submit" class="btn btn-luxury btn-filled btn-sm">Search Room</button>
@@ -114,6 +166,8 @@ $active = 'rooms';
 
     <h3 class="serif-heading" style="font-size:1.5rem;margin-bottom:0.75rem;">Fixed Room Configuration</h3>
     <p style="color:var(--text-muted);margin-bottom:1.25rem;">The hostel layout is fixed to 20 rooms: 10 single-bed rooms on the first floor and 10 double-bed rooms on the second floor.</p>
+
+    <!-- [READ] Display rooms from the SELECT query with subqueries -->
     <table>
         <thead>
             <tr>
@@ -153,6 +207,7 @@ $active = 'rooms';
 </div>
 
 <?php if ($search !== ''): ?>
+<!-- [READ] Detailed search results — bed-level info with occupant details -->
 <div class="card" style="margin-top:1.5rem;">
     <h3 class="serif-heading" style="font-size:1.4rem;margin-bottom:1rem;">Occupancy Search Details</h3>
 
