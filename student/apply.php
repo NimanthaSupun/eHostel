@@ -7,7 +7,7 @@ $uid = $_SESSION['user_id'];
 $error = '';
 $success = '';
 
-$userStmt = mysqli_prepare($conn, "SELECT full_name, nic_no, contact_no, address, academic_year, campus, gender, date_of_birth FROM users WHERE user_id = ?");
+$userStmt = mysqli_prepare($conn, "SELECT full_name, nic_no, contact_no, address, academic_year, degree_program, gender, date_of_birth FROM users WHERE user_id = ?");
 mysqli_stmt_bind_param($userStmt, "i", $uid);
 mysqli_stmt_execute($userStmt);
 $studentProfile = mysqli_stmt_get_result($userStmt)->fetch_assoc() ?: [];
@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canApply) {
     $contactNo = trim($_POST['contact_no'] ?? '');
     $address = trim($_POST['address'] ?? '');
     $academicYear = trim($_POST['academic_year'] ?? '');
-    $campus = trim($_POST['campus'] ?? '');
+    $degreeProgram = trim($_POST['degree_program'] ?? '');
     $gender = trim($_POST['gender'] ?? '');
     $dateOfBirth = trim($_POST['date_of_birth'] ?? '');
     $gender = $gender === '' ? null : $gender;
@@ -37,8 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canApply) {
     } else {
         mysqli_begin_transaction($conn);
         try {
-            $updateUserStmt = mysqli_prepare($conn, "UPDATE users SET nic_no=?, contact_no=?, address=?, academic_year=?, campus=?, gender=?, date_of_birth=? WHERE user_id=?");
-            mysqli_stmt_bind_param($updateUserStmt, "sssssssi", $nicNo, $contactNo, $address, $academicYear, $campus, $gender, $dateOfBirth, $uid);
+            $updateUserStmt = mysqli_prepare($conn, "UPDATE users SET nic_no=?, contact_no=?, address=?, academic_year=?, degree_program=?, gender=?, date_of_birth=? WHERE user_id=?");
+            mysqli_stmt_bind_param($updateUserStmt, "sssssssi", $nicNo, $contactNo, $address, $academicYear, $degreeProgram, $gender, $dateOfBirth, $uid);
             mysqli_stmt_execute($updateUserStmt);
 
             $ins = mysqli_prepare($conn, "INSERT INTO applications (user_id, preferred_room_type, applied_date, status) VALUES (?, ?, CURDATE(), 'pending')");
@@ -154,8 +154,8 @@ $active = 'apply';
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="campus">Campus</label>
-                    <input type="text" id="campus" name="campus" class="input-luxury" value="<?= h($_POST['campus'] ?? ($studentProfile['campus'] ?? 'University of Colombo')) ?>" placeholder="e.g. Colombo Campus">
+                    <label for="degree_program">Degree Program</label>
+                    <input type="text" id="degree_program" name="degree_program" class="input-luxury" value="<?= h($_POST['degree_program'] ?? ($studentProfile['degree_program'] ?? 'BSc in Computer Science')) ?>" placeholder="e.g. BSc in Computer Science">
                 </div>
                 <div class="form-group">
                     <label for="academic_year">Academic Year *</label>

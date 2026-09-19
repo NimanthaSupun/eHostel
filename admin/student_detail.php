@@ -58,14 +58,14 @@ function field_value(array $student, string $key, string $fallback = ''): string
 }
 
 if ($userId <= 0) {
-    header('Location: manage_students.php');
+    header('Location: student_crud.php');
     exit;
 }
 
 $student = load_student_detail($conn, $userId);
 
 if (!$student) {
-    header('Location: manage_students.php');
+    header('Location: student_crud.php');
     exit;
 }
 
@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_student'])) {
     $contactNo = trim($_POST['contact_no'] ?? '');
     $nicNo = trim($_POST['nic_no'] ?? '');
     $academicYear = trim($_POST['academic_year'] ?? '');
-    $campus = trim($_POST['campus'] ?? '');
+    $degreeProgram = trim($_POST['degree_program'] ?? '');
     $address = trim($_POST['address'] ?? '');
     $gender = trim($_POST['gender'] ?? '');
     $dateOfBirth = trim($_POST['date_of_birth'] ?? '');
@@ -102,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_student'])) {
         mysqli_begin_transaction($conn);
         try {
             /* [UPDATE] Update the student record in the users table */
-            $updateStudent = mysqli_prepare($conn, "UPDATE users SET full_name = ?, contact_no = ?, nic_no = ?, academic_year = ?, campus = ?, address = ?, gender = ?, date_of_birth = ? WHERE user_id = ? AND role = 'student'");
+            $updateStudent = mysqli_prepare($conn, "UPDATE users SET full_name = ?, contact_no = ?, nic_no = ?, academic_year = ?, degree_program = ?, address = ?, gender = ?, date_of_birth = ? WHERE user_id = ? AND role = 'student'");
             $dateValue = $dateOfBirth === '' ? null : $dateOfBirth;
             mysqli_stmt_bind_param(
                 $updateStudent,
@@ -111,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_student'])) {
                 $contactNo,
                 $nicNo,
                 $academicYear,
-                $campus,
+                $degreeProgram,
                 $address,
                 $gender,
                 $dateValue,
@@ -175,7 +175,7 @@ $active = 'students';
         <p>Detailed view of the student account and application information.</p>
     </div>
     <div>
-        <a href="manage_students.php" class="btn btn-luxury btn-outline">&larr; Back to Students</a>
+        <a href="student_crud.php" class="btn btn-luxury btn-outline">&larr; Back to Students</a>
     </div>
 </div>
 
@@ -239,8 +239,8 @@ $active = 'students';
 
     <div class="form-row">
         <div class="form-group">
-            <label for="campus">Campus</label>
-            <input type="text" id="campus" name="campus" class="input-luxury" value="<?= h(field_value($student, 'campus', $student['campus'])) ?>">
+            <label for="degree_program">Degree Program</label>
+            <input type="text" id="degree_program" name="degree_program" class="input-luxury" value="<?= h(field_value($student, 'degree_program', $student['degree_program'])) ?>">
         </div>
         <div class="form-group">
             <label for="gender">Gender</label>
@@ -273,7 +273,7 @@ $active = 'students';
     <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;margin-top:1.25rem;">
         <!-- [UPDATE] Submit button triggers the UPDATE query -->
         <button type="submit" class="btn btn-luxury btn-accent">Save Changes</button>
-        <a href="manage_students.php" class="btn btn-luxury btn-outline">Cancel</a>
+        <a href="student_crud.php" class="btn btn-luxury btn-outline">Cancel</a>
     </div>
 </form>
 

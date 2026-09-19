@@ -4,7 +4,7 @@ function ensure_hostel_schema($conn) {
     $ensure_columns = [
         ['users', 'student_id', 'VARCHAR(20) UNIQUE'],
         ['users', 'academic_year', 'VARCHAR(20)'],
-        ['users', 'campus', 'VARCHAR(100)']
+        ['users', 'degree_program', 'VARCHAR(100)']
     ];
 
     foreach ($ensure_columns as [$table, $column, $definition]) {
@@ -14,7 +14,23 @@ function ensure_hostel_schema($conn) {
         }
     }
 
-    $obsolete_user_columns = ['emergency_contact', 'district', 'faculty', 'degree_program', 'distance_km'];
+    $legacyCampusCheck = mysqli_query($conn, "SHOW COLUMNS FROM `users` LIKE 'campus'");
+    $degreeProgramCheck = mysqli_query($conn, "SHOW COLUMNS FROM `users` LIKE 'degree_program'");
+    if ($legacyCampusCheck && mysqli_num_rows($legacyCampusCheck) > 0) {
+        if ($degreeProgramCheck && mysqli_num_rows($degreeProgramCheck) === 0) {
+            mysqli_query($conn, "ALTER TABLE `users` CHANGE `campus` `degree_program` VARCHAR(100)");
+        } else {
+            mysqli_query($conn, "UPDATE `users` SET `degree_program` = COALESCE(`degree_program`, `campus`) WHERE `degree_program` IS NULL AND `campus` IS NOT NULL");
+            mysqli_query($conn, "ALTER TABLE `users` DROP COLUMN `campus`");
+        }
+    }
+
+    $regNoCheck = mysqli_query($conn, "SHOW COLUMNS FROM `users` LIKE 'reg_no'");
+    if ($regNoCheck && mysqli_num_rows($regNoCheck) > 0) {
+        mysqli_query($conn, "ALTER TABLE `users` DROP COLUMN `reg_no`");
+    }
+
+    $obsolete_user_columns = ['emergency_contact', 'district', 'faculty', 'distance_km'];
     foreach ($obsolete_user_columns as $column) {
         $check = mysqli_query($conn, "SHOW COLUMNS FROM `users` LIKE '$column'");
         if ($check && mysqli_num_rows($check) > 0) {

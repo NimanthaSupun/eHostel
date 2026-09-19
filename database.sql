@@ -33,13 +33,12 @@ CREATE TABLE IF NOT EXISTS users (
     contact_no        VARCHAR(20),
     nic_no            VARCHAR(20) UNIQUE,
     address           VARCHAR(255),
-    reg_no            VARCHAR(30) UNIQUE,
     student_id        VARCHAR(20) UNIQUE,
     academic_year     VARCHAR(20),
     age               INT,
     gender            ENUM('Male','Female','Other'),
     date_of_birth     DATE,
-    campus            VARCHAR(100),
+    degree_program    VARCHAR(100),
     photo             VARCHAR(255),
     created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

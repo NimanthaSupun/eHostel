@@ -108,8 +108,8 @@ if (isset($_GET['delete'])) {
 $search = trim($_GET['q'] ?? '');
 if ($search !== '') {
     $like = "%$search%";
-    $stmt = mysqli_prepare($conn, "SELECT * FROM users WHERE role='student' AND (full_name LIKE ? OR username LIKE ? OR student_id LIKE ? OR nic_no LIKE ?) ORDER BY full_name");
-    mysqli_stmt_bind_param($stmt, "ssss", $like, $like, $like, $like);
+    $stmt = mysqli_prepare($conn, "SELECT * FROM users WHERE role='student' AND (full_name LIKE ? OR username LIKE ?) ORDER BY full_name");
+    mysqli_stmt_bind_param($stmt, "ss", $like, $like);
     mysqli_stmt_execute($stmt);
     $students = mysqli_stmt_get_result($stmt);
 } else {
@@ -144,7 +144,7 @@ $active = 'students';
 <div class="card">
     <!-- [READ] Search form — triggers the SELECT ... LIKE query above -->
     <form method="GET" action="manage_students.php" style="display:flex;gap:0.75rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center;">
-        <input type="text" name="q" class="input-luxury" placeholder="Search by name, username, student ID or NIC" value="<?= h($search) ?>" style="max-width:380px;">
+        <input type="text" name="q" class="input-luxury" placeholder="Search by name or username" value="<?= h($search) ?>" style="max-width:380px;">
         <button type="submit" class="btn btn-luxury btn-filled btn-sm">Search Students</button>
         <?php if ($search): ?>
             <a href="manage_students.php" class="btn btn-luxury btn-outline btn-sm">Clear Filter</a>

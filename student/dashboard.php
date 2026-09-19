@@ -76,50 +76,6 @@ $active = 'dash';
 </div>
 
 <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
-        <h3 class="serif-heading" style="font-size:1.6rem;">Accommodation Details</h3>
-        <span class="badge badge-muted">Resident Overview</span>
-    </div>
-
-    <?php if (!$application): ?>
-        <p style="color:var(--text-secondary);font-size:1rem;margin-bottom:1.5rem;">
-            You haven't submitted a hostel application for the current academic session yet.
-        </p>
-        <a href="apply.php" class="btn btn-luxury btn-filled">Start New Application &rarr;</a>
-    <?php else: ?>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:1.5rem;background:var(--bg-primary);padding:1.5rem;border-radius:var(--radius-md);border:1px solid var(--border);">
-            <div>
-                <span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;display:block;">Preferred Room Type</span>
-                <strong style="font-size:1.1rem;color:var(--primary-dark);"><?= h(ucfirst($application['preferred_room_type'])) ?></strong>
-            </div>
-            <div>
-                <span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;display:block;">Submitted Date</span>
-                <strong style="font-size:1.1rem;color:var(--primary-dark);"><?= date('d M Y', strtotime($application['applied_date'])) ?></strong>
-            </div>
-            <div>
-                <span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;display:block;">Review Status</span>
-                <strong style="font-size:1.1rem;color:var(--primary-dark);"><?= h(ucfirst($application['status'])) ?></strong>
-            </div>
-        </div>
-
-        <?php if ($allocation): ?>
-            <div class="alert alert-success" style="margin-top:1.5rem;">
-                🎉 <strong>Congratulations!</strong> Bed allocated: Room <strong><?= h($allocation['room_number']) ?></strong>, Bed <strong><?= h($allocation['bed_number']) ?></strong> (<?= h(ucfirst($allocation['room_type'])) ?>) allocated on <?= date('d M Y', strtotime($allocation['allocation_date'])) ?>.
-            </div>
-        <?php elseif ($application['status'] === 'pending'): ?>
-            <p style="color:var(--text-muted);margin-top:1.25rem;font-size:0.92rem;">
-                ⏳ Your application is currently under review by the university warden and administration office. You will be notified here once a bed is assigned.
-            </p>
-        <?php elseif ($application['status'] === 'rejected'): ?>
-            <div class="alert alert-error" style="margin-top:1.5rem;">
-                Your application was not approved. <?= isset($application['remarks']) && $application['remarks'] ? 'Remarks: ' . h($application['remarks']) : '' ?>
-            </div>
-            <a href="apply.php" class="btn btn-luxury btn-outline" style="margin-top:0.5rem;">Submit New Application</a>
-        <?php endif; ?>
-    <?php endif; ?>
-</div>
-
-<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
         <h3 class="serif-heading" style="font-size:1.6rem;">📢 Recent Announcements</h3>
         <a href="announcements.php" style="font-size:0.82rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;">View All &rarr;</a>

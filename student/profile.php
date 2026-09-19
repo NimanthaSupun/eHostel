@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nic_no = trim($_POST['nic_no'] ?? '');
     $address = trim($_POST['address'] ?? '');
     $academic_year = trim($_POST['academic_year'] ?? '');
-    $campus = trim($_POST['campus'] ?? '');
+    $degree_program = trim($_POST['degree_program'] ?? '');
     $gender = trim($_POST['gender'] ?? '');
     $dob = trim($_POST['date_of_birth'] ?? '');
     $new_password = trim($_POST['password'] ?? '');
@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'nic_no' => $nic_no === '' ? ($user['nic_no'] ?? null) : $nic_no,
                 'address' => $address === '' ? ($user['address'] ?? null) : $address,
                 'academic_year' => $academic_year === '' ? ($user['academic_year'] ?? null) : $academic_year,
-                'campus' => $campus === '' ? ($user['campus'] ?? null) : $campus,
+                'degree_program' => $degree_program === '' ? ($user['degree_program'] ?? null) : $degree_program,
                 'gender' => $gender === '' ? null : $gender,
                 'date_of_birth' => $dob === '' ? null : $dob,
             ];
@@ -162,8 +162,8 @@ $active = 'profile';
         </div>
         <div class="form-row">
             <div class="form-group">
-                <label for="campus">Campus</label>
-                <input type="text" id="campus" name="campus" class="input-luxury" value="<?= h($user['campus'] ?? '') ?>">
+                <label for="degree_program">Degree Program</label>
+                <input type="text" id="degree_program" name="degree_program" class="input-luxury" value="<?= h($user['degree_program'] ?? '') ?>">
             </div>
             <div class="form-group">
                 <label for="gender">Gender</label>
