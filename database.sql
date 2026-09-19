@@ -22,11 +22,9 @@ CREATE TABLE IF NOT EXISTS users (
     address           VARCHAR(255),
     student_id        VARCHAR(20) UNIQUE,
     academic_year     VARCHAR(20),
-    age               INT,
     gender            ENUM('Male','Female','Other'),
     date_of_birth     DATE,
     degree_program    VARCHAR(100),
-    photo             VARCHAR(255),
     created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

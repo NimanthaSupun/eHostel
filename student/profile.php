@@ -7,10 +7,19 @@ $uid = $_SESSION['user_id'];
 $error = '';
 $success = '';
 
+if (isset($_SESSION['profile_success_message'])) {
+    $success = $_SESSION['profile_success_message'];
+    unset($_SESSION['profile_success_message']);
+}
+
 $stmt = mysqli_prepare($conn, "SELECT * FROM users WHERE user_id = ?");
 mysqli_stmt_bind_param($stmt, "i", $uid);
 mysqli_stmt_execute($stmt);
 $user = mysqli_stmt_get_result($stmt)->fetch_assoc();
+
+function profile_value(array $user, string $key): string {
+    return isset($_POST[$key]) ? (string) $_POST[$key] : (string) ($user[$key] ?? '');
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $full_name = trim($_POST['full_name'] ?? '');
@@ -78,7 +87,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $_SESSION['full_name'] = $full_name;
             mysqli_commit($conn);
-            $success = 'Profile details updated successfully.';
+            $_SESSION['profile_success_message'] = 'Profile details updated successfully.';
+            header('Location: profile.php');
+            exit;
         } catch (Exception $e) {
             mysqli_rollback($conn);
             $error = $e->getMessage();
@@ -133,7 +144,7 @@ $active = 'profile';
         <div class="form-row">
             <div class="form-group">
                 <label for="full_name">Full Name *</label>
-                <input type="text" id="full_name" name="full_name" class="input-luxury" required value="<?= h($user['full_name']) ?>">
+                <input type="text" id="full_name" name="full_name" class="input-luxury" required value="<?= h(profile_value($user, 'full_name')) ?>">
             </div>
             <div class="form-group">
                 <label>Student ID</label>
@@ -143,42 +154,43 @@ $active = 'profile';
         <div class="form-row">
             <div class="form-group">
                 <label for="nic_no">NIC No.</label>
-                <input type="text" id="nic_no" name="nic_no" class="input-luxury" value="<?= h($user['nic_no'] ?? '') ?>">
+                <input type="text" id="nic_no" name="nic_no" class="input-luxury" value="<?= h(profile_value($user, 'nic_no')) ?>">
             </div>
             <div class="form-group">
                 <label for="academic_year">Academic Year</label>
-                <input type="text" id="academic_year" name="academic_year" class="input-luxury" value="<?= h($user['academic_year'] ?? '') ?>">
+                <input type="text" id="academic_year" name="academic_year" class="input-luxury" value="<?= h(profile_value($user, 'academic_year')) ?>">
             </div>
         </div>
         <div class="form-row">
             <div class="form-group">
                 <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" class="input-luxury" value="<?= h($user['email']) ?>">
+                <input type="email" id="email" name="email" class="input-luxury" value="<?= h(profile_value($user, 'email')) ?>">
             </div>
             <div class="form-group">
                 <label for="contact_no">Contact No.</label>
-                <input type="tel" id="contact_no" name="contact_no" class="input-luxury" value="<?= h($user['contact_no']) ?>">
+                <input type="tel" id="contact_no" name="contact_no" class="input-luxury" value="<?= h(profile_value($user, 'contact_no')) ?>">
             </div>
         </div>
         <div class="form-row">
             <div class="form-group">
                 <label for="degree_program">Degree Program</label>
-                <input type="text" id="degree_program" name="degree_program" class="input-luxury" value="<?= h($user['degree_program'] ?? '') ?>">
+                <input type="text" id="degree_program" name="degree_program" class="input-luxury" value="<?= h(profile_value($user, 'degree_program')) ?>">
             </div>
             <div class="form-group">
                 <label for="gender">Gender</label>
                 <select id="gender" name="gender" class="input-luxury">
-                    <option value="" <?= ($user['gender'] ?? '') === '' ? 'selected' : '' ?>>Select Gender</option>
-                    <option value="Male" <?= ($user['gender'] ?? '') === 'Male' ? 'selected' : '' ?>>Male</option>
-                    <option value="Female" <?= ($user['gender'] ?? '') === 'Female' ? 'selected' : '' ?>>Female</option>
-                    <option value="Other" <?= ($user['gender'] ?? '') === 'Other' ? 'selected' : '' ?>>Other</option>
+                        <?php $genderValue = profile_value($user, 'gender'); ?>
+                        <option value="" <?= $genderValue === '' ? 'selected' : '' ?>>Select Gender</option>
+                        <option value="Male" <?= $genderValue === 'Male' ? 'selected' : '' ?>>Male</option>
+                        <option value="Female" <?= $genderValue === 'Female' ? 'selected' : '' ?>>Female</option>
+                        <option value="Other" <?= $genderValue === 'Other' ? 'selected' : '' ?>>Other</option>
                 </select>
             </div>
         </div>
         <div class="form-row">
             <div class="form-group">
                 <label for="date_of_birth">Date of Birth</label>
-                <input type="date" id="date_of_birth" name="date_of_birth" class="input-luxury" value="<?= h($user['date_of_birth'] ?? '') ?>">
+                    <input type="date" id="date_of_birth" name="date_of_birth" class="input-luxury" value="<?= h(profile_value($user, 'date_of_birth')) ?>">
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
@@ -187,7 +199,7 @@ $active = 'profile';
         </div>
         <div class="form-group">
             <label for="address">Permanent Address (with district)</label>
-            <textarea id="address" name="address" class="input-luxury" rows="3" placeholder="Enter your permanent address including district"><?= h($user['address'] ?? '') ?></textarea>
+            <textarea id="address" name="address" class="input-luxury" rows="3" placeholder="Enter your permanent address including district"><?= h(profile_value($user, 'address')) ?></textarea>
         </div>
         <button type="submit" class="btn btn-luxury btn-accent">Save Profile Changes</button>
     </form>

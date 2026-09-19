@@ -34,6 +34,11 @@ function ensure_hostel_schema($conn) {
         mysqli_query($conn, "ALTER TABLE `rooms` DROP COLUMN `hostel_id`");
     }
 
+    $hostelsTable = mysqli_query($conn, "SHOW TABLES LIKE 'hostels'");
+    if ($hostelsTable && mysqli_num_rows($hostelsTable) > 0) {
+        mysqli_query($conn, "DROP TABLE IF EXISTS `hostels`");
+    }
+
     $legacyCampusCheck = mysqli_query($conn, "SHOW COLUMNS FROM `users` LIKE 'campus'");
     $degreeProgramCheck = mysqli_query($conn, "SHOW COLUMNS FROM `users` LIKE 'degree_program'");
     if ($legacyCampusCheck && mysqli_num_rows($legacyCampusCheck) > 0) {
@@ -50,7 +55,7 @@ function ensure_hostel_schema($conn) {
         mysqli_query($conn, "ALTER TABLE `users` DROP COLUMN `reg_no`");
     }
 
-    $obsolete_user_columns = ['emergency_contact', 'district', 'faculty', 'distance_km'];
+    $obsolete_user_columns = ['emergency_contact', 'district', 'faculty', 'distance_km', 'age', 'photo'];
     foreach ($obsolete_user_columns as $column) {
         $check = mysqli_query($conn, "SHOW COLUMNS FROM `users` LIKE '$column'");
         if ($check && mysqli_num_rows($check) > 0) {

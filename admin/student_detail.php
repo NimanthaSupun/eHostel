@@ -21,6 +21,11 @@ $userId = (int) ($_GET['id'] ?? 0);
 $error = '';
 $success = '';
 
+if (isset($_SESSION['student_detail_success_message'])) {
+    $success = $_SESSION['student_detail_success_message'];
+    unset($_SESSION['student_detail_success_message']);
+}
+
 
 /* ══════════════════════════════════════════════════════════════
  *  [READ] — Load a single student's full detail
@@ -123,10 +128,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_student'])) {
             }
 
             mysqli_commit($conn);
-            $success = 'Student information updated successfully.';
-
-            /* [READ] Re-load student data after update */
-            $student = load_student_detail($conn, $userId);
+            $_SESSION['student_detail_success_message'] = 'Student information updated successfully.';
+            header('Location: student_detail.php?id=' . $userId);
+            exit;
         } catch (Exception $e) {
             mysqli_rollback($conn);
             $error = $e->getMessage();
