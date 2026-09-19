@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_student'])) {
             $dateValue = $dateOfBirth === '' ? null : $dateOfBirth;
             mysqli_stmt_bind_param(
                 $updateStudent,
-                'sssssssi',
+                'ssssssssi',
                 $fullName,
                 $contactNo,
                 $nicNo,
