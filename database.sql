@@ -8,19 +8,6 @@ CREATE DATABASE IF NOT EXISTS ehostel CHARACTER SET utf8mb4 COLLATE utf8mb4_gene
 USE ehostel;
 
 -- ------------------------------------------------------------
--- Table: hostels (Hostel building premises)
--- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS hostels (
-    hostel_id   INT AUTO_INCREMENT PRIMARY KEY,
-    hostel_name VARCHAR(100) NOT NULL,
-    address     VARCHAR(255),
-    floors      INT DEFAULT 1,
-    total_rooms INT DEFAULT 0,
-    status      ENUM('active','inactive') DEFAULT 'active',
-    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- ------------------------------------------------------------
 -- Table: users  (both students and admins, role-based)
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
@@ -48,13 +35,11 @@ CREATE TABLE IF NOT EXISTS users (
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS rooms (
     room_id     INT AUTO_INCREMENT PRIMARY KEY,
-    hostel_id   INT DEFAULT 1,
     floor       INT DEFAULT 1,
     room_number VARCHAR(10) NOT NULL UNIQUE,
     room_type   ENUM('single','shared') NOT NULL DEFAULT 'shared',
     capacity    INT NOT NULL DEFAULT 2,
-    status      ENUM('active','inactive') NOT NULL DEFAULT 'active',
-    FOREIGN KEY (hostel_id) REFERENCES hostels(hostel_id) ON DELETE SET NULL
+    status      ENUM('active','inactive') NOT NULL DEFAULT 'active'
 );
 
 -- ------------------------------------------------------------
@@ -107,13 +92,6 @@ CREATE TABLE IF NOT EXISTS announcements (
     FOREIGN KEY (posted_by) REFERENCES users(user_id) ON DELETE SET NULL
 );
 
--- ============================================================
--- Default data
--- ============================================================
-
-INSERT INTO hostels (hostel_name, address, floors, total_rooms) VALUES
-('eHostel Main Campus Residence', 'Colombo 03 Campus Grounds', 3, 36);
-
 -- Default admin account -> username: admin   password: admin123
 -- Default ordinary user -> username: uoc  password: uoc
 INSERT INTO users (username, password, role, full_name, email) VALUES
@@ -121,27 +99,27 @@ INSERT INTO users (username, password, role, full_name, email) VALUES
 ('uoc',   '$2b$12$BtMQjOjMOaCDprVgD/Fi8.2CnaLID8UDzl1SQaLqaQmt5Oi6aPGrq', 'student', 'Default User', 'uoc@ucsc.cmb.ac.lk');
 
 -- Sample rooms for the fixed floor layout
-INSERT INTO rooms (hostel_id, floor, room_number, room_type, capacity, status) VALUES
-(1, 1, 'F1/01', 'single', 1, 'active'),
-(1, 1, 'F1/02', 'single', 1, 'active'),
-(1, 1, 'F1/03', 'single', 1, 'active'),
-(1, 1, 'F1/04', 'single', 1, 'active'),
-(1, 1, 'F1/05', 'single', 1, 'active'),
-(1, 1, 'F1/06', 'single', 1, 'active'),
-(1, 1, 'F1/07', 'single', 1, 'active'),
-(1, 1, 'F1/08', 'single', 1, 'active'),
-(1, 1, 'F1/09', 'single', 1, 'active'),
-(1, 1, 'F1/10', 'single', 1, 'active'),
-(1, 2, 'F2/01', 'shared', 2, 'active'),
-(1, 2, 'F2/02', 'shared', 2, 'active'),
-(1, 2, 'F2/03', 'shared', 2, 'active'),
-(1, 2, 'F2/04', 'shared', 2, 'active'),
-(1, 2, 'F2/05', 'shared', 2, 'active'),
-(1, 2, 'F2/06', 'shared', 2, 'active'),
-(1, 2, 'F2/07', 'shared', 2, 'active'),
-(1, 2, 'F2/08', 'shared', 2, 'active'),
-(1, 2, 'F2/09', 'shared', 2, 'active'),
-(1, 2, 'F2/10', 'shared', 2, 'active');
+INSERT INTO rooms (floor, room_number, room_type, capacity, status) VALUES
+(1, 'F1/01', 'single', 1, 'active'),
+(1, 'F1/02', 'single', 1, 'active'),
+(1, 'F1/03', 'single', 1, 'active'),
+(1, 'F1/04', 'single', 1, 'active'),
+(1, 'F1/05', 'single', 1, 'active'),
+(1, 'F1/06', 'single', 1, 'active'),
+(1, 'F1/07', 'single', 1, 'active'),
+(1, 'F1/08', 'single', 1, 'active'),
+(1, 'F1/09', 'single', 1, 'active'),
+(1, 'F1/10', 'single', 1, 'active'),
+(2, 'F2/01', 'shared', 2, 'active'),
+(2, 'F2/02', 'shared', 2, 'active'),
+(2, 'F2/03', 'shared', 2, 'active'),
+(2, 'F2/04', 'shared', 2, 'active'),
+(2, 'F2/05', 'shared', 2, 'active'),
+(2, 'F2/06', 'shared', 2, 'active'),
+(2, 'F2/07', 'shared', 2, 'active'),
+(2, 'F2/08', 'shared', 2, 'active'),
+(2, 'F2/09', 'shared', 2, 'active'),
+(2, 'F2/10', 'shared', 2, 'active');
 
 -- Beds for each room
 INSERT INTO beds (room_id, bed_number, status) VALUES

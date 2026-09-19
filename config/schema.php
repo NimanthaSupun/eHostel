@@ -14,6 +14,26 @@ function ensure_hostel_schema($conn) {
         }
     }
 
+    $roomHostelKey = mysqli_query(
+        $conn,
+        "SELECT CONSTRAINT_NAME
+         FROM information_schema.KEY_COLUMN_USAGE
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'rooms'
+           AND COLUMN_NAME = 'hostel_id'
+           AND REFERENCED_TABLE_NAME = 'hostels'"
+    );
+    if ($roomHostelKey && mysqli_num_rows($roomHostelKey) > 0) {
+        while ($fk = mysqli_fetch_assoc($roomHostelKey)) {
+            mysqli_query($conn, "ALTER TABLE `rooms` DROP FOREIGN KEY `" . $fk['CONSTRAINT_NAME'] . "`");
+        }
+    }
+
+    $legacyHostelId = mysqli_query($conn, "SHOW COLUMNS FROM `rooms` LIKE 'hostel_id'");
+    if ($legacyHostelId && mysqli_num_rows($legacyHostelId) > 0) {
+        mysqli_query($conn, "ALTER TABLE `rooms` DROP COLUMN `hostel_id`");
+    }
+
     $legacyCampusCheck = mysqli_query($conn, "SHOW COLUMNS FROM `users` LIKE 'campus'");
     $degreeProgramCheck = mysqli_query($conn, "SHOW COLUMNS FROM `users` LIKE 'degree_program'");
     if ($legacyCampusCheck && mysqli_num_rows($legacyCampusCheck) > 0) {
@@ -46,19 +66,13 @@ function ensure_hostel_schema($conn) {
         }
     }
 
-    $hostelCount = (int) mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM hostels"))[0];
-    if ($hostelCount === 0) {
-        mysqli_query($conn, "INSERT INTO hostels (hostel_name, address, floors, total_rooms, status) VALUES ('eHostel Main Campus Residence', 'Colombo 03 Campus Grounds', 2, 20, 'active')");
-    }
-
-    $hostelId = (int) mysqli_fetch_row(mysqli_query($conn, "SELECT hostel_id FROM hostels ORDER BY hostel_id LIMIT 1"))[0];
     $roomCount = (int) mysqli_fetch_row(mysqli_query($conn, "SELECT COUNT(*) FROM rooms"))[0];
 
     if ($roomCount === 0) {
         for ($i = 1; $i <= 10; $i++) {
             $roomNumber = 'F1/' . str_pad((string) $i, 2, '0', STR_PAD_LEFT);
-            $roomStmt = mysqli_prepare($conn, "INSERT INTO rooms (hostel_id, floor, room_number, room_type, capacity, status) VALUES (?, 1, ?, 'single', 1, 'active')");
-            mysqli_stmt_bind_param($roomStmt, 'is', $hostelId, $roomNumber);
+            $roomStmt = mysqli_prepare($conn, "INSERT INTO rooms (floor, room_number, room_type, capacity, status) VALUES (1, ?, 'single', 1, 'active')");
+            mysqli_stmt_bind_param($roomStmt, 's', $roomNumber);
             mysqli_stmt_execute($roomStmt);
             $roomId = mysqli_insert_id($conn);
             $bedNumber = $roomNumber . '/A' . $i;
@@ -69,8 +83,8 @@ function ensure_hostel_schema($conn) {
 
         for ($i = 1; $i <= 10; $i++) {
             $roomNumber = 'F2/' . str_pad((string) $i, 2, '0', STR_PAD_LEFT);
-            $roomStmt = mysqli_prepare($conn, "INSERT INTO rooms (hostel_id, floor, room_number, room_type, capacity, status) VALUES (?, 2, ?, 'shared', 2, 'active')");
-            mysqli_stmt_bind_param($roomStmt, 'is', $hostelId, $roomNumber);
+            $roomStmt = mysqli_prepare($conn, "INSERT INTO rooms (floor, room_number, room_type, capacity, status) VALUES (2, ?, 'shared', 2, 'active')");
+            mysqli_stmt_bind_param($roomStmt, 's', $roomNumber);
             mysqli_stmt_execute($roomStmt);
             $roomId = mysqli_insert_id($conn);
             $bedOne = $roomNumber . '/A' . $i;
